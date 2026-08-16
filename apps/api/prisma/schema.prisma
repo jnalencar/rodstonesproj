@@ -12,15 +12,206 @@ datasource db {
   provider = "postgresql"
 }
 
-model Bundle {
-  id Int @id @default(autoincrement())
-
-  slabs Slab[]
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
-model Slab {
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PartnerStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PartnerType {
+  THERODSTONES
+  OTHER
+}
+
+model Company {
+  id        Int           @id @default(autoincrement())
+  name      String
+  legalName String?
+  document  String?       @unique
+  email     String?
+  phone     String?
+  status    CompanyStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  memberships CompanyMembership[]
+  partners    PartnerCompany[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  passwordHash String
+  status       UserStatus @default(ACTIVE)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+  deletedAt   DateTime?
+
+  memberships   CompanyMembership[]
+  refreshTokens RefreshToken[]
+
+  /// createdShares             Share[]              @relation("ShareCreatedBy")
+  /// assignedReservationRequests ReservationRequest[] @relation("ReservationAssignedTo")
+  /// approvedReservations      Reservation[]        @relation("ReservationApprovedBy")
+  /// reservationStatusHistory  ReservationStatusHistory[]
+  /// notifications             NotificationRecipient[]
+  /// auditEvents               AuditEvent[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model CompanyMembership {
   id Int @id @default(autoincrement())
 
-  bundleId Int
-  bundle   Bundle @relation(fields: [bundleId], references: [id])
+  userId    Int
+  companyId Int
+  status    MembershipStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  roles UserRole[]
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@index([userId])
+}
+
+model Role {
+  id          Int     @id @default(autoincrement())
+  name        String
+  code        String  @unique
+  description String?
+  isSystem    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          Int     @id @default(autoincrement())
+  name        String
+  code        String  @unique
+  description String?
+
+  createdAt DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  id Int @id @default(autoincrement())
+
+  membershipId Int
+  roleId       Int
+
+  createdAt DateTime @default(now())
+
+  membership CompanyMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role       Role              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  id Int @id @default(autoincrement())
+
+  roleId       Int
+  permissionId Int
+
+  createdAt DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Partner {
+  id Int @id @default(autoincrement())
+
+  name   String
+  type   PartnerType
+  email  String?
+  phone  String?
+  status PartnerStatus @default(PENDING)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  companies PartnerCompany[]
+
+  @@index([type])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model PartnerCompany {
+  id Int @id @default(autoincrement())
+
+  partnerId Int
+  companyId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, companyId])
+  @@index([companyId])
+}
+
+model RefreshToken {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  tokenHash String @unique
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
