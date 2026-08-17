@@ -10,10 +10,14 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Roles } from './decorators/roles.decorator';
+import { Permissions } from './decorators/permissions.decorator';
+import { RolesGuard } from './guards/roles.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Get('test')
   test() {
@@ -34,5 +38,23 @@ export class AuthController {
   @Get('me')
   me(@Req() req: any) {
     return this.authService.getUserById(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('PLATFORM_ADMIN')
+  @Get('admin-test')
+  adminTest() {
+    return {
+      message: 'Você é administrador da plataforma',
+    };
+  }
+
+  @Get('test-compread-permission')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('company:read')
+  testSellerPermission() {
+    return {
+      message: 'Você possui company:read',
+    };
   }
 }
