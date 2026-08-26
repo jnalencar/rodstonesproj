@@ -4,15 +4,16 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PrismaService } from '../../prisma/prisma.service';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
+import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions =
@@ -26,25 +27,22 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const user = request.user as AuthenticatedUser | undefined;
 
     if (!user) {
       return false;
     }
 
-    const userPermissions = user.permissions ?? [];
-    if (userPermissions.length) {
-      return requiredPermissions.every((permission) =>
-        userPermissions.includes(permission),
-      );
+    if (!user.membershipId) {
+      return false;
     }
 
-    const memberships = await this.prisma.companyMembership.findMany({
+    const membership = await this.prisma.companyMembership.findUnique({
       where: {
-        userId: user.userId,
-        status: 'ACTIVE',
+        id: user.membershipId,
       },
       select: {
+        status: true,
         roles: {
           select: {
             role: {
@@ -65,15 +63,18 @@ export class PermissionsGuard implements CanActivate {
       },
     });
 
-    const permissions = new Set<string>();
+    if (!membership || membership.status !== 'ACTIVE') {
+      return false;
+    }
 
-    memberships.forEach((membership) => {
-      membership.roles.forEach((userRole) => {
-        userRole.role.permissions.forEach((rolePermission) => {
-          permissions.add(rolePermission.permission.code);
-        });
-      });
-    });
+
+    const permissions = new Set(
+      membership.roles.flatMap((userRole) =>
+        userRole.role.permissions.map(
+          (rolePermission) => rolePermission.permission.code,
+        ),
+      ),
+    );
 
     return requiredPermissions.every((permission) =>
       permissions.has(permission),

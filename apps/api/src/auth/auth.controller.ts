@@ -14,15 +14,16 @@ import { Roles } from './decorators/roles.decorator';
 import { Permissions } from './decorators/permissions.decorator';
 import { RolesGuard } from './guards/roles.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
+import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { SwitchCompanyDto } from './dto/switch-company.dto';
+import { CompanyContextGuard } from './guards/company-context.guard';
+import { CompanyContextData } from './interfaces/company-context-interface';
+import { CompanyContext } from './decorators/company-context.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
-
-  @Get('test')
-  test() {
-    return { message: 'Auth module funcionando' };
-  }
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -34,27 +35,53 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@Req() req: any) {
-    return this.authService.getUserById(req.user.userId);
+  @UseGuards(JwtAuthGuard)
+  async getMe(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getUserById(user.userId);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('PLATFORM_ADMIN')
-  @Get('admin-test')
-  adminTest() {
-    return {
-      message: 'Você é administrador da plataforma',
-    };
+  //@UseGuards(JwtAuthGuard, RolesGuard)
+  //@Roles('PLATFORM_ADMIN')
+  //@Get('admin-test')
+  //adminTest() {
+  //  return {
+  //    message: 'Você é administrador da plataforma',
+  //  };
+  //}
+
+  //@Get('test-compread-permission')
+  //@UseGuards(JwtAuthGuard, PermissionsGuard)
+  //@Permissions('company:read')
+  //testSellerPermission() {
+  //  return {
+  //    message: 'Você possui company:read',
+  //  };
+  //}
+
+  @Get('context')
+  @UseGuards(JwtAuthGuard)
+  getContext(@CurrentUser() user: AuthenticatedUser) {
+    return user;
   }
 
-  @Get('test-compread-permission')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('company:read')
-  testSellerPermission() {
-    return {
-      message: 'Você possui company:read',
-    };
+  @Post('switch-company')
+  @UseGuards(JwtAuthGuard)
+  switchCompany(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SwitchCompanyDto,
+  ) {
+    return this.authService.switchCompany(
+      user.userId,
+      dto,
+    );
+  }
+
+  @Get('company-context-test')
+  @UseGuards(JwtAuthGuard, CompanyContextGuard)
+  testCompanyContext(
+    @CompanyContext() context: CompanyContextData,
+  ) {
+    return context;
   }
 }

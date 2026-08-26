@@ -23,21 +23,44 @@ const permissions: { code: string; description: string }[] = [
   { code: 'bundle:create', description: 'Criar bundles' },
   { code: 'bundle:update', description: 'Atualizar bundles' },
   { code: 'bundle:delete', description: 'Excluir bundles' },
+  { code: 'bundle:availability', description: 'Gerenciar disponibilidade de bundles' },
+
+  { code: 'bundle:image:read', description: 'Visualizar imagens de bundles' },
+  { code: 'bundle:image:create', description: 'Criar imagens de bundles' },
+  { code: 'bundle:image:update', description: 'Atualizar imagens de bundles' },
+  { code: 'bundle:image:delete', description: 'Excluir imagens de bundles' },
+
+  { code: 'slab:read', description: 'Visualizar slabs' },
+  { code: 'slab:create', description: 'Criar slabs' },
+  { code: 'slab:update', description: 'Atualizar slabs' },
+  { code: 'slab:delete', description: 'Excluir slabs' },
+
+  { code: 'slab:image:read', description: 'Visualizar imagens de slabs' },
+  { code: 'slab:image:create', description: 'Criar imagens de slabs' },
+  { code: 'slab:image:update', description: 'Atualizar imagens de slabs' },
+  { code: 'slab:image:delete', description: 'Excluir imagens de slabs' },
 
   { code: 'share:read', description: 'Visualizar compartilhamentos' },
   { code: 'share:create', description: 'Criar compartilhamentos' },
   { code: 'share:update', description: 'Atualizar compartilhamentos' },
   { code: 'share:delete', description: 'Excluir compartilhamentos' },
+  { code: 'share:revoke', description: 'Revogar compartilhamentos' },
 
   { code: 'reservation:read', description: 'Visualizar reservas' },
   { code: 'reservation:create', description: 'Criar reservas' },
   { code: 'reservation:approve', description: 'Aprovar reservas' },
   { code: 'reservation:reject', description: 'Rejeitar reservas' },
+  { code: 'reservation:cancel', description: 'Cancelar reservas' },
+  { code: 'reservation:release', description: 'Liberar reservas' },
 
   { code: 'partner:read', description: 'Visualizar parceiros' },
   { code: 'partner:create', description: 'Criar parceiros' },
   { code: 'partner:update', description: 'Atualizar parceiros' },
   { code: 'partner:delete', description: 'Excluir parceiros' },
+  
+  { code: 'partner:pricing', description: 'Gerenciar preços e margens de revenda de parceiros' },
+  { code: 'partner:price:read', description: 'Visualizar preço de revenda' },
+  { code: 'partner:price:update', description: 'Alterar preço de revenda'},
 
   { code: 'membership:read', description: 'Visualizar membros' },
   { code: 'membership:create', description: 'Criar membros' },
@@ -50,9 +73,16 @@ const permissions: { code: string; description: string }[] = [
   { code: 'role:delete', description: 'Excluir papéis' },
 
   { code: 'permission:read', description: 'Visualizar permissões' },
-  { code: 'permission:create', description: 'Criar permissões' },
-  { code: 'permission:update', description: 'Atualizar permissões' },
-  { code: 'permission:delete', description: 'Excluir permissões' },
+
+  { code: 'partnerCompany:read', description: 'Visualizar empresas de parceiros' },
+  { code: 'partnerCompany:create', description: 'Criar empresas de parceiros' },
+  { code: 'partnerCompany:update', description: 'Atualizar empresas de parceiros' },
+  { code: 'partnerCompany:delete', description: 'Excluir empresas de parceiros' },
+
+  { code: 'audit:read', description: 'Visualizar auditorias' },
+
+  { code: 'notification:read', description: 'Visualizar notificações' },
+  { code: 'notification:manage', description: 'Gerenciar notificações' },
 ];
 
 const roles: { code: string; description: string; isSystem: boolean }[] = [
@@ -65,75 +95,347 @@ const roles: { code: string; description: string; isSystem: boolean }[] = [
 ];
 
 const rolePermissions = {
-  PLATFORM_ADMIN: ['company:read', 'company:create', 'company:update', 'company:delete'],
-  COMPANY_ADMIN: [],
-  MANAGER: [],
-  SELLER: [],
-  PARTNER_ADMIN: [],
-  PARTNER_SELLER: []
+  PLATFORM_ADMIN: [
+    'company:read',
+    'company:create',
+    'company:update',
+    'company:delete',
+
+    'user:read',
+    'user:create',
+    'user:update',
+    'user:delete',
+
+    'bundle:read',
+    'bundle:create',
+    'bundle:update',
+    'bundle:delete',
+    'bundle:availability',
+
+    'bundle:image:read',
+    'bundle:image:create',
+    'bundle:image:update',
+    'bundle:image:delete',
+
+    'slab:read',
+    'slab:create',
+    'slab:update',
+    'slab:delete',
+
+    'slab:image:read',
+    'slab:image:create',
+    'slab:image:update',
+    'slab:image:delete',
+
+    'share:read',
+    'share:create',
+    'share:update',
+    'share:delete',
+    'share:revoke',
+
+    'reservation:read',
+    'reservation:create',
+    'reservation:approve',
+    'reservation:reject',
+    'reservation:cancel',
+    'reservation:release',
+
+    'partner:read',
+    'partner:create',
+    'partner:update',
+    'partner:delete',
+
+    'membership:read',
+    'membership:create',
+    'membership:update',
+    'membership:delete',
+
+    'role:read',
+    'role:create',
+    'role:update',
+    'role:delete',
+
+    'permission:read',
+
+    'partnerCompany:read',
+    'partnerCompany:create',
+    'partnerCompany:update',
+    'partnerCompany:delete',
+
+    'audit:read',
+
+    'notification:read',
+    'notification:manage',
+  ],
+
+  COMPANY_ADMIN: [
+    'company:read',
+    'company:update',
+
+    'user:read',
+    'user:create',
+    'user:update',
+    'user:delete',
+
+    'bundle:read',
+    'bundle:create',
+    'bundle:update',
+    'bundle:delete',
+    'bundle:availability',
+
+    'bundle:image:read',
+    'bundle:image:create',
+    'bundle:image:update',
+    'bundle:image:delete',
+
+    'slab:read',
+    'slab:create',
+    'slab:update',
+    'slab:delete',
+
+    'slab:image:read',
+    'slab:image:create',
+    'slab:image:update',
+    'slab:image:delete',
+
+    'share:read',
+    'share:create',
+    'share:update',
+    'share:delete',
+    'share:revoke',
+
+    'reservation:read',
+    'reservation:create',
+    'reservation:approve',
+    'reservation:reject',
+    'reservation:cancel',
+    'reservation:release',
+
+    'membership:read',
+    'membership:create',
+    'membership:update',
+    'membership:delete',
+
+    'role:read',
+    'role:create',
+    'role:update',
+    'role:delete',
+
+    'permission:read',
+
+    'partnerCompany:read',
+
+    'audit:read',
+
+    'notification:read',
+    'notification:manage',
+  ],
+
+  MANAGER: [
+    'company:read',
+
+    'user:read',
+
+    'bundle:read',
+    'bundle:create',
+    'bundle:update',
+    'bundle:delete',
+    'bundle:availability',
+
+    'bundle:image:read',
+    'bundle:image:create',
+    'bundle:image:update',
+    'bundle:image:delete',
+
+    'slab:read',
+    'slab:create',
+    'slab:update',
+    'slab:delete',
+
+    'slab:image:read',
+    'slab:image:create',
+    'slab:image:update',
+    'slab:image:delete',
+
+    'share:read',
+    'share:create',
+    'share:update',
+    'share:delete',
+    'share:revoke',
+
+    'reservation:read',
+    'reservation:create',
+    'reservation:approve',
+    'reservation:reject',
+    'reservation:cancel',
+    'reservation:release',
+
+    'membership:read',
+
+    'audit:read',
+
+    'notification:read',
+  ],
+
+  SELLER: [
+    'company:read',
+
+    'user:read',
+
+    'bundle:read',
+
+    'bundle:image:read',
+
+    'slab:read',
+
+    'slab:image:read',
+
+    'share:read',
+    'share:create',
+    'share:update',
+    'share:delete',
+    'share:revoke',
+
+    'reservation:read',
+    'reservation:create',
+    'reservation:cancel',
+
+    'notification:read',
+  ],
+
+  PARTNER_ADMIN: [
+    'company:read',
+
+    'user:read',
+    'user:create',
+    'user:update',
+    'user:delete',
+
+    'bundle:read',
+    'bundle:image:read',
+
+    'slab:read',
+    'slab:image:read',
+
+    'share:read',
+    'share:create',
+    'share:update',
+    'share:delete',
+    'share:revoke',
+
+    'reservation:read',
+    'reservation:create',
+    'reservation:approve',
+    'reservation:reject',
+    'reservation:cancel',
+    'reservation:release',
+
+    'partner:read',
+    'partner:price:read',
+    'partner:price:update',
+
+    'membership:read',
+    'membership:create',
+    'membership:update',
+    'membership:delete',
+
+    'partnerCompany:read',
+    'partnerCompany:create',
+    'partnerCompany:update',
+
+    'audit:read',
+
+    'notification:read',
+    'notification:manage',
+  ],
+
+  PARTNER_SELLER: [
+    'company:read',
+
+    'user:read',
+
+    'bundle:read',
+    'bundle:image:read',
+
+    'slab:read',
+    'slab:image:read',
+
+    'partner:price:read',
+
+    'share:read',
+    'share:create',
+    'share:update',
+    'share:revoke',
+
+    'reservation:read',
+    'reservation:create',
+    'reservation:cancel',
+
+    'notification:read',
+  ],
 };
 
 async function main() {
   for (const permission of permissions) {
-  await prisma.permission.upsert({
-    where: { code: permission.code },
-    update: { description: permission.description },
-    create: {
-      code: permission.code,
-      name: permission.code,
-      description: permission.description,
-    },
-  });
-}
-
-  for (const role of roles) {
-  await prisma.role.upsert({
-    where: { code: role.code },
-    update: {
-      description: role.description,
-      isSystem: role.isSystem,
-    },
-    create: {
-      code: role.code,
-      name: role.code,
-      description: role.description,
-      isSystem: role.isSystem,
-    },
-  });
-}
-  for (const [roleCode, permissionCodes] of Object.entries(rolePermissions)) {
-  const role = await prisma.role.findUnique({
-    where: { code: roleCode },
-  });
-
-  if (!role) {
-    throw new Error(`Role ${roleCode} não encontrada`);
+    await prisma.permission.upsert({
+      where: { code: permission.code },
+      update: { description: permission.description },
+      create: {
+        code: permission.code,
+        name: permission.code,
+        description: permission.description,
+      },
+    });
   }
 
-  for (const permissionCode of permissionCodes) {
-    const permission = await prisma.permission.findUnique({
-      where: { code: permissionCode },
+  for (const role of roles) {
+    await prisma.role.upsert({
+      where: { code: role.code },
+      update: {
+        description: role.description,
+        isSystem: role.isSystem,
+      },
+      create: {
+        code: role.code,
+        name: role.code,
+        description: role.description,
+        isSystem: role.isSystem,
+      },
+    });
+  }
+  for (const [roleCode, permissionCodes] of Object.entries(rolePermissions)) {
+    const role = await prisma.role.findUnique({
+      where: { code: roleCode },
     });
 
-    if (!permission) {
-      throw new Error(`Permission ${permissionCode} não encontrada`);
+    if (!role) {
+      throw new Error(`Role ${roleCode} não encontrada`);
     }
 
-    await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId: {
+    for (const permissionCode of permissionCodes) {
+      const permission = await prisma.permission.findUnique({
+        where: { code: permissionCode },
+      });
+
+      if (!permission) {
+        throw new Error(`Permission ${permissionCode} não encontrada`);
+      }
+
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
           roleId: role.id,
           permissionId: permission.id,
         },
-      },
-      update: {},
-      create: {
-        roleId: role.id,
-        permissionId: permission.id,
-      },
-    });
+      });
+    }
   }
-}
 }
 
 main()
