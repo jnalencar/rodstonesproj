@@ -145,6 +145,7 @@ model UserRole {
   role       Role              @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([membershipId, roleId])
+  @@index([membershipId])
   @@index([roleId])
 }
 
