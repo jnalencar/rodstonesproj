@@ -59,11 +59,11 @@ export class AuthController {
   //  };
   //}
 
-  @Get('context')
-  @UseGuards(JwtAuthGuard)
-  getContext(@CurrentUser() user: AuthenticatedUser) {
-    return user;
-  }
+  //@Get('context')
+  //@UseGuards(JwtAuthGuard)
+  //getContext(@CurrentUser() user: AuthenticatedUser) {
+  //  return user;
+  //}
 
   @Post('switch-company')
   @UseGuards(JwtAuthGuard)

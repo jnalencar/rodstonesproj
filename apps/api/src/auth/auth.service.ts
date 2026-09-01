@@ -133,8 +133,8 @@ export class AuthService {
     const membership =
       await this.prisma.companyMembership.findFirst({
         where: {
-          id: dto.membershipId,
           userId,
+          companyId: dto.companyId,
           status: 'ACTIVE',
           company: {
             status: 'ACTIVE',

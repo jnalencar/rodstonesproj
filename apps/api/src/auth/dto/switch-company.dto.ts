@@ -1,6 +1,7 @@
-import { IsInt } from 'class-validator';
+import { IsInt, Min } from 'class-validator';
 
 export class SwitchCompanyDto {
   @IsInt()
-  membershipId!: number;
+  @Min(1)
+  companyId!: number;
 }
