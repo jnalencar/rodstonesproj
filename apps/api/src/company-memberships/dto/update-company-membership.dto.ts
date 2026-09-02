@@ -1,4 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateCompanyMembershipDto } from './create-company-membership.dto';
+import { MembershipStatus } from 'generated/prisma/client';
+import { IsEnum } from 'class-validator';
 
-export class UpdateCompanyMembershipDto extends PartialType(CreateCompanyMembershipDto) {}
+export class UpdateCompanyMembershipDto {
+  @IsEnum(MembershipStatus)
+  status!: MembershipStatus;
+}

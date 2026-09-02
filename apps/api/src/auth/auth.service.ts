@@ -136,6 +136,7 @@ export class AuthService {
           userId,
           companyId: dto.companyId,
           status: 'ACTIVE',
+          deletedAt: null,
           company: {
             status: 'ACTIVE',
             deletedAt: null,
