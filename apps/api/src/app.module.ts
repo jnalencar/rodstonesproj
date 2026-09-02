@@ -5,10 +5,28 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { CompaniesModule } from './companies/companies.module';
 import { CompanyMembershipsModule } from './company-memberships/company-memberships.module';
+import { APP_GUARD } from '@nestjs/core';
+import { GlobalJwtAuthGuard } from './auth/guards/global-jwt-auth-guards';
+import { CompanyContextGuard } from './auth/guards/company-context.guard';
+import { PermissionsGuard } from './auth/guards/permissions.guard';
 
 @Module({
   imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: GlobalJwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CompanyContextGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
+    },
+  ],
 })
 export class AppModule {}

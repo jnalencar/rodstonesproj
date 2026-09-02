@@ -4,7 +4,6 @@ import {
   Get,
   ParseIntPipe,
   Post,
-  UseGuards,
   Param,
   Patch,
   Delete
@@ -12,14 +11,11 @@ import {
 
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
-
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UpdateCompanyDto } from './dto/update-company.dto';
-import { CompanyContextGuard } from 'src/auth/guards/company-context.guard';
+import { CompanyRequired } from '../auth/decorators/company-required.decorator';
 
 @Controller('companies')
 export class CompaniesController {
@@ -28,7 +24,6 @@ export class CompaniesController {
   ) { }
 
   @Post('create')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('company:create')
   create(
     @Body() dto: CreateCompanyDto,
@@ -38,7 +33,6 @@ export class CompaniesController {
   }
 
   @Get('list')
-  @UseGuards(JwtAuthGuard)
   findAll(
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -46,7 +40,6 @@ export class CompaniesController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
   findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -55,7 +48,6 @@ export class CompaniesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('company:update')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -66,7 +58,7 @@ export class CompaniesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, PermissionsGuard, CompanyContextGuard)
+  @CompanyRequired()
   @Permissions('company:delete')
   remove(
     @Param('id', ParseIntPipe) id: number,

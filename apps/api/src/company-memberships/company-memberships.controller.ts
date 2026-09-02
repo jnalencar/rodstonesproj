@@ -1,24 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { CompanyMembershipsService } from './company-memberships.service';
 import { CreateCompanyMembershipDto } from './dto/create-company-membership.dto';
 import { UpdateCompanyMembershipDto } from './dto/update-company-membership.dto';
-import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
-import { CompanyContextGuard } from 'src/auth/guards/company-context.guard';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { Permissions } from '../auth/decorators/permissions.decorator';
+import { CompanyRequired } from '../auth/decorators/company-required.decorator';
 
 @Controller('company-memberships')
 export class CompanyMembershipsController {
   constructor(private readonly companyMembershipsService: CompanyMembershipsService) { }
 
   @Post('create')
-  @UseGuards(
-    JwtAuthGuard,
-    CompanyContextGuard,
-    PermissionsGuard,
-  )
+  @CompanyRequired()
   @Permissions('membership:create')
   create(
     @Body() dto: CreateCompanyMembershipDto,
@@ -28,11 +22,7 @@ export class CompanyMembershipsController {
   }
 
   @Get('list')
-  @UseGuards(
-    JwtAuthGuard,
-    CompanyContextGuard,
-    PermissionsGuard,
-  )
+  @CompanyRequired()
   @Permissions('membership:read')
   findAll(
     @CurrentUser() user: AuthenticatedUser,
@@ -41,11 +31,7 @@ export class CompanyMembershipsController {
   }
 
   @Get(':id')
-  @UseGuards(
-    JwtAuthGuard,
-    CompanyContextGuard,
-    PermissionsGuard,
-  )
+  @CompanyRequired()
   @Permissions('membership:read')
   findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -55,7 +41,7 @@ export class CompanyMembershipsController {
   }
 
   @Patch('memberships/:id')
-  @UseGuards(JwtAuthGuard, CompanyContextGuard, PermissionsGuard)
+  @CompanyRequired()
   @Permissions('membership:update')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -65,7 +51,7 @@ export class CompanyMembershipsController {
   }
 
   @Delete('memberships/:id/delete')
-  @UseGuards(JwtAuthGuard, CompanyContextGuard, PermissionsGuard)
+  @CompanyRequired()
   @Permissions('membership:delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.companyMembershipsService.remove(id);
