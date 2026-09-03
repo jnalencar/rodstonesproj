@@ -66,6 +66,7 @@ const permissions: { code: string; description: string }[] = [
   { code: 'membership:create', description: 'Criar membros' },
   { code: 'membership:update', description: 'Atualizar membros' },
   { code: 'membership:delete', description: 'Excluir membros' },
+  { code: 'membership:roles', description: 'Gerenciar papéis de membros' },
 
   { code: 'role:read', description: 'Visualizar papéis' },
   { code: 'role:create', description: 'Criar papéis' },

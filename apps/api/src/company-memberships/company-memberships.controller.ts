@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Put } from '@nestjs/common';
 import { CompanyMembershipsService } from './company-memberships.service';
 import { CreateCompanyMembershipDto } from './dto/create-company-membership.dto';
 import { UpdateCompanyMembershipDto } from './dto/update-company-membership.dto';
@@ -6,6 +6,7 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { CompanyRequired } from '../auth/decorators/company-required.decorator';
+import { UpdateMembershipRolesDto } from './dto/update-membership-roles.dto';
 
 @Controller('company-memberships')
 export class CompanyMembershipsController {
@@ -40,7 +41,7 @@ export class CompanyMembershipsController {
     return this.companyMembershipsService.findOne(id, user);
   }
 
-  @Patch('memberships/:id')
+  @Patch(':id')
   @CompanyRequired()
   @Permissions('membership:update')
   update(
@@ -50,10 +51,21 @@ export class CompanyMembershipsController {
     return this.companyMembershipsService.update(id, dto);
   }
 
-  @Delete('memberships/:id/delete')
+  @Delete(':id')
   @CompanyRequired()
   @Permissions('membership:delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.companyMembershipsService.remove(id);
+  }
+
+  @Patch(':id/roles')
+  @CompanyRequired()
+  @Permissions('membership:update')
+  updateRoles(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMembershipRolesDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.companyMembershipsService.updateRoles(id, dto, user);
   }
 }

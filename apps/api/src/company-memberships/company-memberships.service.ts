@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCompanyMembershipDto } from './dto/create-company-membership.dto';
 import { UpdateCompanyMembershipDto } from './dto/update-company-membership.dto';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UpdateMembershipRolesDto } from './dto/update-membership-roles.dto';
 
 @Injectable()
 export class CompanyMembershipsService {
@@ -240,5 +241,108 @@ export class CompanyMembershipsService {
       message: 'Vínculo removido com sucesso',
     };
   }
+
+  async updateRoles(
+  id: number,
+  dto: UpdateMembershipRolesDto,
+  user: AuthenticatedUser,
+) {
+  if (!user.companyId) {
+    throw new NotFoundException(
+      'Usuário não pertence a nenhuma empresa',
+    );
+  }
+
+  const membership = await this.prisma.companyMembership.findFirst({
+    where: {
+      id,
+      companyId: user.companyId,
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+  });
+
+  if (!membership) {
+    throw new NotFoundException('Membro não encontrado');
+  }
+
+  const roles = await this.prisma.role.findMany({
+    where: {
+      id: {
+        in: dto.roleIds,
+      },
+    },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      isSystem: true,
+    },
+  });
+
+  if (roles.length !== dto.roleIds.length) {
+    throw new NotFoundException(
+      'Uma ou mais roles não foram encontradas',
+    );
+  }
+
+  const allowedRoles = [
+    'COMPANY_ADMIN',
+    'MANAGER',
+    'SELLER',
+    'PARTNER_ADMIN',
+    'PARTNER_SELLER',
+  ];
+
+  const invalidRoles = roles.filter(
+    (role) => !allowedRoles.includes(role.code),
+  );
+
+  if (invalidRoles.length > 0) {
+    throw new BadRequestException(
+      `As seguintes roles não podem ser atribuídas: ${invalidRoles
+        .map((role) => role.code)
+        .join(', ')}`,
+    );
+  }
+
+  await this.prisma.$transaction(async (tx) => {
+    await tx.userRole.deleteMany({
+      where: {
+        membershipId: membership.id,
+      },
+    });
+
+    await tx.userRole.createMany({
+      data: roles.map((role) => ({
+        membershipId: membership.id,
+        roleId: role.id,
+      })),
+    });
+  });
+
+  return this.prisma.companyMembership.findUnique({
+    where: {
+      id: membership.id,
+    },
+    select: {
+      id: true,
+      userId: true,
+      companyId: true,
+      status: true,
+      roles: {
+        select: {
+          role: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
 
 }
