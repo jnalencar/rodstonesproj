@@ -9,9 +9,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { GlobalJwtAuthGuard } from './auth/guards/global-jwt-auth-guards';
 import { CompanyContextGuard } from './auth/guards/company-context.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
+import { UsersModule } from './users/users.module';
+import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule],
+  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule],
   controllers: [AppController],
   providers: [
     AppService,

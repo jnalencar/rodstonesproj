@@ -60,7 +60,7 @@ export class CompanyMembershipsController {
 
   @Patch(':id/roles')
   @CompanyRequired()
-  @Permissions('membership:update')
+  @Permissions('membership:update') //TODO membership:roles porém tem que fazer migração para a nova permissão
   updateRoles(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMembershipRolesDto,
