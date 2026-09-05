@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCompanyMembershipDto } from './dto/create-company-membership.dto';
 import { UpdateCompanyMembershipDto } from './dto/update-company-membership.dto';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
@@ -243,106 +243,128 @@ export class CompanyMembershipsService {
   }
 
   async updateRoles(
-  id: number,
-  dto: UpdateMembershipRolesDto,
-  user: AuthenticatedUser,
-) {
-  if (!user.companyId) {
-    throw new NotFoundException(
-      'Usuário não pertence a nenhuma empresa',
-    );
-  }
+    id: number,
+    dto: UpdateMembershipRolesDto,
+    user: AuthenticatedUser,
+  ) {
+    if (!user.companyId) {
+      throw new NotFoundException(
+        'Usuário não pertence a nenhuma empresa',
+      );
+    }
 
-  const membership = await this.prisma.companyMembership.findFirst({
-    where: {
-      id,
-      companyId: user.companyId,
-      status: 'ACTIVE',
-      deletedAt: null,
-    },
-  });
-
-  if (!membership) {
-    throw new NotFoundException('Membro não encontrado');
-  }
-
-  const roles = await this.prisma.role.findMany({
-    where: {
-      id: {
-        in: dto.roleIds,
-      },
-    },
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      isSystem: true,
-    },
-  });
-
-  if (roles.length !== dto.roleIds.length) {
-    throw new NotFoundException(
-      'Uma ou mais roles não foram encontradas',
-    );
-  }
-
-  const allowedRoles = [
-    'COMPANY_ADMIN',
-    'MANAGER',
-    'SELLER',
-    'PARTNER_ADMIN',
-    'PARTNER_SELLER',
-  ];
-
-  const invalidRoles = roles.filter(
-    (role) => !allowedRoles.includes(role.code),
-  );
-
-  if (invalidRoles.length > 0) {
-    throw new BadRequestException(
-      `As seguintes roles não podem ser atribuídas: ${invalidRoles
-        .map((role) => role.code)
-        .join(', ')}`,
-    );
-  }
-
-  await this.prisma.$transaction(async (tx) => {
-    await tx.userRole.deleteMany({
-      where: {
-        membershipId: membership.id,
-      },
-    });
-
-    await tx.userRole.createMany({
-      data: roles.map((role) => ({
-        membershipId: membership.id,
-        roleId: role.id,
-      })),
-    });
-  });
-
-  return this.prisma.companyMembership.findUnique({
-    where: {
-      id: membership.id,
-    },
-    select: {
-      id: true,
-      userId: true,
-      companyId: true,
-      status: true,
-      roles: {
+    const membership =
+      await this.prisma.companyMembership.findFirst({
+        where: {
+          id,
+          companyId: user.companyId,
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
         select: {
-          role: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
+          id: true,
+          userId: true,
+          companyId: true,
+        },
+      });
+
+    if (!membership) {
+      throw new NotFoundException('Membro não encontrado');
+    }
+
+    const requestedRoles = [...new Set(dto.roles)];
+
+    const roles = await this.prisma.role.findMany({
+      where: {
+        code: {
+          in: requestedRoles,
+        },
+        OR: [
+          {
+            companyId: null,
+          },
+          {
+            companyId: user.companyId,
+          },
+        ],
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        companyId: true,
+        isSystem: true,
+      },
+    });
+
+    const foundCodes = new Set(
+      roles.map((role) => role.code),
+    );
+
+    const invalidRoles = requestedRoles.filter(
+      (code) => !foundCodes.has(code),
+    );
+
+    if (invalidRoles.length) {
+      throw new NotFoundException(
+        `Roles inválidos ou não disponíveis: ${invalidRoles.join(', ')}`,
+      );
+    }
+
+    const forbiddenPlatformAdmin = roles.some(
+      (role) => role.code === 'PLATFORM_ADMIN',
+    );
+
+    if (forbiddenPlatformAdmin) {
+      throw new ForbiddenException(
+        'PLATFORM_ADMIN não pode ser atribuído por uma empresa',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userRole.deleteMany({
+        where: {
+          membershipId: membership.id,
+        },
+      });
+
+      if (roles.length > 0) {
+        await tx.userRole.createMany({
+          data: roles.map((role) => ({
+            membershipId: membership.id,
+            roleId: role.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    });
+
+
+    return this.prisma.companyMembership.findUnique({
+      where: {
+        id: membership.id,
+      },
+      select: {
+        id: true,
+        userId: true,
+        companyId: true,
+        status: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                description: true,
+                companyId: true,
+                isSystem: true,
+              },
             },
           },
         },
       },
-    },
-  });
-}
+    });
+  }
 
 }

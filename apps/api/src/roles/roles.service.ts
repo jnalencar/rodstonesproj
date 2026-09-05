@@ -16,6 +16,12 @@ export class RolesService {
         return this.prisma.role.findMany({
             where: {
                 OR: [
+                    //não listar platform_admin
+                    {
+                        code: {
+                            not: 'PLATFORM_ADMIN',
+                        },
+                    },
                     {
                         isSystem: true,
                     },
