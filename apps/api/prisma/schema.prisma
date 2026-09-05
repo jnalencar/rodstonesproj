@@ -58,6 +58,8 @@ model Company {
   memberships CompanyMembership[]
   partners    PartnerCompany[]
 
+  roles Role[]
+
   @@index([status])
   @@index([deletedAt])
 }
@@ -112,15 +114,22 @@ model CompanyMembership {
 model Role {
   id          Int     @id @default(autoincrement())
   name        String
-  code        String  @unique
+  code        String
   description String?
   isSystem    Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  companyId Int?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
   users       UserRole[]
   permissions RolePermission[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([isSystem])
 }
 
 model Permission {

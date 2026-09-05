@@ -11,9 +11,10 @@ import { CompanyContextGuard } from './auth/guards/company-context.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { UsersModule } from './users/users.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule],
+  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule],
   controllers: [AppController],
   providers: [
     AppService,
