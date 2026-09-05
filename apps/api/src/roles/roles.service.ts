@@ -19,7 +19,8 @@ export class RolesService {
                     {
                         isSystem: true,
                     },
-                    {
+                    {   
+                        isSystem: false,
                         companyId: user.companyId,
                     },
                 ],
@@ -128,6 +129,7 @@ export class RolesService {
                 name: dto.name,
                 code: dto.code,
                 description: dto.description,
+                companyId: user.companyId,
                 permissions: {
                     create: permissions.map((permission) => ({
                         permissionId: permission.id,

@@ -22,6 +22,7 @@ export class RolesController {
     ) { }
 
     @Get('list')
+    @CompanyRequired()
     @Permissions('role:read')
     findAll(
         @CurrentUser() user: AuthenticatedUser,

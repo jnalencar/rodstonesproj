@@ -390,22 +390,33 @@ async function main() {
   }
 
   for (const role of roles) {
-    await prisma.role.upsert({
+    const existingRole = await prisma.role.findFirst({
       where: { code: role.code },
-      update: {
-        description: role.description,
-        isSystem: role.isSystem,
-      },
-      create: {
-        code: role.code,
-        name: role.code,
-        description: role.description,
-        isSystem: role.isSystem,
-      },
     });
+
+    if (existingRole) {
+      await prisma.role.update({
+        where: { id: existingRole.id },
+        data: {
+          description: role.description,
+          isSystem: role.isSystem,
+          companyId: null,
+        },
+      });
+    } else {
+      await prisma.role.create({
+        data: {
+          code: role.code,
+          name: role.code,
+          description: role.description,
+          isSystem: role.isSystem,
+          companyId: null,
+        },
+      });
+    }
   }
   for (const [roleCode, permissionCodes] of Object.entries(rolePermissions)) {
-    const role = await prisma.role.findUnique({
+    const role = await prisma.role.findFirst({
       where: { code: roleCode },
     });
 
@@ -414,7 +425,7 @@ async function main() {
     }
 
     for (const permissionCode of permissionCodes) {
-      const permission = await prisma.permission.findUnique({
+      const permission = await prisma.permission.findFirst({
         where: { code: permissionCode },
       });
 

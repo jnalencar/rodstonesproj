@@ -35,7 +35,7 @@ export class CompaniesService {
     }
 
     const companyAdminRole =
-      await this.prisma.role.findUnique({
+      await this.prisma.role.findFirst({
         where: {
           code: 'COMPANY_ADMIN',
         },
