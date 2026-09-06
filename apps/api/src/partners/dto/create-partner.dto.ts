@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreatePartnerDto {
   @IsString()
@@ -8,6 +8,10 @@ export class CreatePartnerDto {
 
   @IsEnum(['THERODSTONES', 'OTHER'])  //(['RESELLER', 'INTEGRATOR', 'OTHER']) pós migration
   type!: string;
+
+  @IsOptional()
+  @IsInt()
+  companyId?: number;
 
   @IsOptional()
   @IsEmail()

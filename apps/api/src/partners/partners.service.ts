@@ -1,6 +1,7 @@
 import {
     ConflictException,
     Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
@@ -13,14 +14,40 @@ export class PartnersService {
     ) { }
 
     async create(dto: CreatePartnerDto) {
+        const company = await this.prisma.company.findFirst({
+            where: {
+                id: dto.companyId,
+                status: 'ACTIVE',
+                deletedAt: null,
+            },
+        });
+
+        if (!company) {
+            throw new NotFoundException(
+                'Empresa não encontrada ou está inativa',
+            );
+        }
+
+        const existingCompany = await this.prisma.partner.findFirst({
+            where: {
+                companyId: dto.companyId,
+                deletedAt: null,
+            },
+        });
+
+        if (existingCompany) {
+            throw new ConflictException(
+                'Empresa já possui um representante comercial',
+            );
+        }
+
         if (dto.email) {
-            const existingPartner =
-                await this.prisma.partner.findFirst({
-                    where: {
-                        email: dto.email,
-                        deletedAt: null,
-                    },
-                });
+            const existingPartner = await this.prisma.partner.findFirst({
+                where: {
+                    email: dto.email,
+                    deletedAt: null,
+                },
+            });
 
             if (existingPartner) {
                 throw new ConflictException(
@@ -31,7 +58,8 @@ export class PartnersService {
 
         return this.prisma.partner.create({
             data: {
-                name: dto.name,
+                name: company.name,
+                companyId: company.id,
                 type: dto.type as PartnerType,
                 email: dto.email,
                 phone: dto.phone,
