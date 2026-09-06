@@ -59,6 +59,8 @@ model Company {
   memberships CompanyMembership[]
   partners    PartnerCompany[]
 
+  partner Partner?
+
   roles Role[]
 
   @@index([status])
@@ -177,6 +179,8 @@ model RolePermission {
 
 model Partner {
   id Int @id @default(autoincrement())
+
+  companyId Int? @unique
 
   name   String
   type   PartnerType
