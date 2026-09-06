@@ -38,7 +38,8 @@ enum PartnerStatus {
 }
 
 enum PartnerType {
-  THERODSTONES
+  RESELLER
+  INTEGRATOR
   OTHER
 }
 

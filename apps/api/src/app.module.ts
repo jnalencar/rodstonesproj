@@ -12,9 +12,10 @@ import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { UsersModule } from './users/users.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
+import { PartnersModule } from './partners/partners.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule],
+  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule, PartnersModule],
   controllers: [AppController],
   providers: [
     AppService,
