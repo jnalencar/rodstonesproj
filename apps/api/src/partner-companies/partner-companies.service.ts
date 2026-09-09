@@ -96,4 +96,39 @@ export class PartnerCompaniesService {
       },
     });
   }
+
+  async findAll() {
+  return this.prisma.partnerCompany.findMany({
+    select: {
+      id: true,
+      partnerId: true,
+      companyId: true,
+      createdAt: true,
+      updatedAt: true,
+
+      partner: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          email: true,
+          status: true,
+          companyId: true,
+        },
+      },
+
+      company: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+        },
+      },
+    },
+
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
 }

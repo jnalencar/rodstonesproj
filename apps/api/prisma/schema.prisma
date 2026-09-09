@@ -59,7 +59,7 @@ model Company {
   memberships CompanyMembership[]
   partners    PartnerCompany[]
 
-  partner Partner?
+  partner Partner? 
 
   roles Role[]
 
@@ -192,6 +192,7 @@ model Partner {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  company   Company? @relation(fields: [companyId], references: [id])
   companies PartnerCompany[]
 
   @@index([type])

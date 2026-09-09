@@ -1,4 +1,5 @@
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { PartnerType } from 'generated/prisma/enums';
 
 export class CreatePartnerDto {
   @IsString()
@@ -6,8 +7,8 @@ export class CreatePartnerDto {
   @MaxLength(150)
   name!: string;
 
-  @IsEnum(['THERODSTONES', 'OTHER'])  //(['RESELLER', 'INTEGRATOR', 'OTHER']) pós migration
-  type!: string;
+  @IsEnum(PartnerType)
+  type!: PartnerType;
 
   @IsOptional()
   @IsInt()

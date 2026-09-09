@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
 } from '@nestjs/common';
 
@@ -12,11 +13,17 @@ import { Permissions } from '../auth/decorators/permissions.decorator';
 export class PartnerCompaniesController {
   constructor(
     private readonly partnerCompaniesService: PartnerCompaniesService,
-  ) {}
+  ) { }
 
   @Post('create')
   @Permissions('partnerCompany:create')
   create(@Body() dto: CreatePartnerCompanyDto) {
     return this.partnerCompaniesService.create(dto);
+  }
+
+  @Get('list')
+  @Permissions('partnerCompany:read')
+  findAll() {
+    return this.partnerCompaniesService.findAll();
   }
 }

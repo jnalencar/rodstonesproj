@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
-import { PartnerType } from '@prisma/client';
 
 @Injectable()
 export class PartnersService {
@@ -14,31 +13,36 @@ export class PartnersService {
     ) { }
 
     async create(dto: CreatePartnerDto) {
-        const company = await this.prisma.company.findFirst({
-            where: {
-                id: dto.companyId,
-                status: 'ACTIVE',
-                deletedAt: null,
-            },
-        });
+        if (dto.companyId) {
+            const company = await this.prisma.company.findFirst({
+                where: {
+                    id: dto.companyId,
+                    status: 'ACTIVE',
+                    deletedAt: null,
+                },
+                select: {
+                    id: true,
+                },
+            });
 
-        if (!company) {
-            throw new NotFoundException(
-                'Empresa não encontrada ou está inativa',
-            );
-        }
+            if (!company) {
+                throw new NotFoundException(
+                    'Empresa não encontrada ou está inativa',
+                );
+            }
 
-        const existingCompany = await this.prisma.partner.findFirst({
-            where: {
-                companyId: dto.companyId,
-                deletedAt: null,
-            },
-        });
+            const existingCompany = await this.prisma.partner.findFirst({
+                where: {
+                    companyId: dto.companyId,
+                    deletedAt: null,
+                },
+            });
 
-        if (existingCompany) {
-            throw new ConflictException(
-                'Empresa já possui um representante comercial',
-            );
+            if (existingCompany) {
+                throw new ConflictException(
+                    'Empresa já possui um representante comercial',
+                );
+            }
         }
 
         if (dto.email) {
@@ -58,9 +62,9 @@ export class PartnersService {
 
         return this.prisma.partner.create({
             data: {
-                name: company.name,
-                companyId: company.id,
-                type: dto.type as PartnerType,
+                name: dto.name,
+                companyId: dto.companyId,
+                type: dto.type,
                 email: dto.email,
                 phone: dto.phone,
             },
