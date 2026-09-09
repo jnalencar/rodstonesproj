@@ -8,6 +8,9 @@ import {
 import { PartnersService } from './partners.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { Permissions } from '../auth/decorators/permissions.decorator';
+import { CompanyRequired } from '../auth/decorators/company-required.decorator';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @Controller('partners')
 export class PartnersController {
@@ -22,8 +25,9 @@ export class PartnersController {
     }
 
     @Get('list')
+    @CompanyRequired()
     @Permissions('partner:read')
-    findAll() {
-        return this.partnersService.findAll();
+    findAll(@CurrentUser() user: AuthenticatedUser) {
+        return this.partnersService.findAllByCompany(user);
     }
 }

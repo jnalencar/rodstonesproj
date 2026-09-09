@@ -1,10 +1,12 @@
 import {
     ConflictException,
+    BadRequestException,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class PartnersService {
@@ -102,4 +104,38 @@ export class PartnersService {
             },
         });
     }
+
+    async findAllByCompany(user: AuthenticatedUser) {
+  if (!user.companyId) {
+    throw new BadRequestException(
+      'Nenhuma empresa selecionada',
+    );
+  }
+
+  return this.prisma.partner.findMany({
+    where: {
+      deletedAt: null,
+      status: 'ACTIVE',
+      companies: {
+        some: {
+          companyId: user.companyId,
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      email: true,
+      phone: true,
+      status: true,
+      companyId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
 }
