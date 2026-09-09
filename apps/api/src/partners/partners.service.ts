@@ -138,4 +138,39 @@ export class PartnersService {
     },
   });
 }
+
+async remove(
+  id: number,
+  user: AuthenticatedUser,
+) {
+  if (!user.companyId) {
+    throw new NotFoundException(
+      'Usuário não possui uma empresa selecionada',
+    );
+  }
+
+  const partnerCompany =
+    await this.prisma.partnerCompany.findFirst({
+      where: {
+        id,
+        companyId: user.companyId,
+      },
+    });
+
+  if (!partnerCompany) {
+    throw new NotFoundException(
+      'Vínculo entre parceiro e empresa não encontrado',
+    );
+  }
+
+  await this.prisma.partnerCompany.delete({
+    where: {
+      id: partnerCompany.id,
+    },
+  });
+
+  return {
+    message: 'Vínculo removido com sucesso',
+  };
+}
 }
