@@ -14,9 +14,10 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { PartnersModule } from './partners/partners.module';
 import { PartnerCompaniesModule } from './partner-companies/partner-companies.module';
+import { MaterialsModule } from './materials/materials.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule, PartnersModule, PartnerCompaniesModule],
+  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule, PartnersModule, PartnerCompaniesModule, MaterialsModule],
   controllers: [AppController],
   providers: [
     AppService,

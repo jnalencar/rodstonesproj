@@ -43,6 +43,11 @@ enum PartnerType {
   OTHER
 }
 
+enum MaterialStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Company {
   id        Int           @id @default(autoincrement())
   name      String
@@ -55,6 +60,8 @@ model Company {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  materials Material[]
 
   memberships CompanyMembership[]
   partners    PartnerCompany[]
@@ -231,4 +238,26 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model Material {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+
+  name        String
+  description String?
+
+  status    MaterialStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// bundles Bundle[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([deletedAt])
 }

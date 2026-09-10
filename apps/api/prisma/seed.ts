@@ -84,6 +84,12 @@ const permissions: { code: string; description: string }[] = [
 
   { code: 'notification:read', description: 'Visualizar notificações' },
   { code: 'notification:manage', description: 'Gerenciar notificações' },
+
+  { code: 'material:read', description: 'Visualizar materiais' },
+  { code: 'material:create', description: 'Criar materiais' },
+  { code: 'material:update', description: 'Atualizar materiais' },
+  { code: 'material:delete', description: 'Excluir materiais' },
+
 ];
 
 const roles: { code: string; description: string; isSystem: boolean }[] = [
@@ -167,6 +173,11 @@ const rolePermissions = {
 
     'notification:read',
     'notification:manage',
+
+    'material:read',
+    'material:create',
+    'material:update',
+    'material:delete',
   ],
 
   COMPANY_ADMIN: [
@@ -228,8 +239,15 @@ const rolePermissions = {
 
     'audit:read',
 
+    'partner:read',
+
     'notification:read',
     'notification:manage',
+
+    'material:read',
+    'material:create',
+    'material:update',
+    'material:delete',
   ],
 
   MANAGER: [
