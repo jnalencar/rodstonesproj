@@ -48,6 +48,14 @@ enum MaterialStatus {
   INACTIVE
 }
 
+enum BundleStatus {
+  PENDING
+  AVAILABLE
+  RESERVED
+  SOLD
+  INACTIVE
+}
+
 model Company {
   id        Int           @id @default(autoincrement())
   name      String
@@ -62,11 +70,12 @@ model Company {
   deletedAt DateTime?
 
   materials Material[]
+  bundles   Bundle[]
 
   memberships CompanyMembership[]
   partners    PartnerCompany[]
 
-  partner Partner? 
+  partner Partner?
 
   roles Role[]
 
@@ -107,8 +116,8 @@ model CompanyMembership {
   companyId Int
   status    MembershipStatus @default(ACTIVE)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -199,7 +208,7 @@ model Partner {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  company   Company? @relation(fields: [companyId], references: [id])
+  company   Company?         @relation(fields: [companyId], references: [id])
   companies PartnerCompany[]
 
   @@index([type])
@@ -241,13 +250,13 @@ model RefreshToken {
 }
 
 model Material {
-  id        Int      @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
   companyId Int
 
   name        String
   description String?
 
-  status    MaterialStatus @default(ACTIVE)
+  status MaterialStatus @default(ACTIVE)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -255,9 +264,59 @@ model Material {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  /// bundles Bundle[]
+  bundles Bundle[]
 
   @@index([companyId])
   @@index([status])
   @@index([deletedAt])
+}
+
+model Bundle {
+  id         Int @id @default(autoincrement())
+  companyId  Int
+  materialId Int
+
+  block      String?
+  bundleCode String
+
+  thickness Decimal?
+  weight    Decimal?
+
+  referencePrice Decimal?
+  purchasePrice  Decimal?
+
+  status BundleStatus @default(PENDING)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  image BundleImage?
+
+  @@unique([companyId, bundleCode])
+  @@index([companyId])
+  @@index([materialId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model BundleImage {
+  id Int @id @default(autoincrement())
+
+  bundleId Int @unique
+
+  storageKey   String
+  originalName String
+  mimeType     String
+  size         Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
 }
