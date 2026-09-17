@@ -9,12 +9,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
 
 import { CreateSlabDto } from './dto/create-slab.dto';
+import { UpdateSlabDto } from './dto/update-slab.dto';
 
 @Injectable()
 export class SlabsService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async create(
     bundleId: number,
@@ -23,7 +24,6 @@ export class SlabsService {
   ) {
     const companyId = this.getCompanyId(user);
 
-    // 1. Validar o Bundle
     const bundle = await this.prisma.bundle.findFirst({
       where: {
         id: bundleId,
@@ -39,7 +39,6 @@ export class SlabsService {
       );
     }
 
-    // 2. Validar dimensões
     const length = Number(dto.length);
     const height = Number(dto.height);
 
@@ -54,7 +53,6 @@ export class SlabsService {
       );
     }
 
-    // 3. Verificar número duplicado
     const existingSlab =
       await this.prisma.slab.findFirst({
         where: {
@@ -70,14 +68,12 @@ export class SlabsService {
       );
     }
 
-    // 4. Calcular área
     const area = length * height;
 
     const roundedArea = Number(
       area.toFixed(3),
     );
 
-    // 5. Criar chapa
     const slab = await this.prisma.slab.create({
       data: {
         bundleId,
@@ -102,5 +98,233 @@ export class SlabsService {
     }
 
     return user.companyId;
+  }
+
+  async findAll(
+    bundleId: number,
+    user: AuthenticatedUser,
+  ) {
+    const companyId = this.getCompanyId(user);
+
+    const bundle = await this.prisma.bundle.findFirst({
+      where: {
+        id: bundleId,
+        companyId,
+        deletedAt: null,
+        status: {
+          not: 'INACTIVE',
+        },
+      },
+    });
+
+    if (!bundle) {
+      throw new NotFoundException(
+        'Bundle não encontrado ou está inativo.',
+      );
+    }
+
+    return this.prisma.slab.findMany({
+      where: {
+        bundleId,
+        deletedAt: null,
+      },
+      orderBy: {
+        number: 'asc',
+      },
+      include: {
+        images: true,
+      },
+    });
+  }
+
+  async findOne(
+    bundleId: number,
+    slabId: number,
+    user: AuthenticatedUser,
+  ) {
+    const companyId = this.getCompanyId(user);
+
+    const bundle = await this.prisma.bundle.findFirst({
+      where: {
+        id: bundleId,
+        companyId,
+        deletedAt: null,
+        status: {
+          not: 'INACTIVE',
+        },
+      },
+    });
+
+    if (!bundle) {
+      throw new NotFoundException(
+        'Bundle não encontrado ou está inativo.',
+      );
+    }
+
+    const slab = await this.prisma.slab.findFirst({
+      where: {
+        id: slabId,
+        bundleId,
+        deletedAt: null,
+      },
+      include: {
+        images: true,
+      },
+    });
+
+    if (!slab) {
+      throw new NotFoundException(
+        'Chapa não encontrada.',
+      );
+    }
+
+    return slab;
+  }
+
+  async update(
+    bundleId: number,
+    slabId: number,
+    dto: UpdateSlabDto,
+    user: AuthenticatedUser,
+  ) {
+    const companyId = this.getCompanyId(user);
+
+    const bundle = await this.prisma.bundle.findFirst({
+      where: {
+        id: bundleId,
+        companyId,
+        deletedAt: null,
+        status: {
+          not: 'INACTIVE',
+        },
+      },
+    });
+
+    if (!bundle) {
+      throw new NotFoundException(
+        'Bundle não encontrado ou está inativo.',
+      );
+    }
+
+    const slab = await this.prisma.slab.findFirst({
+      where: {
+        id: slabId,
+        bundleId,
+        deletedAt: null,
+      },
+    });
+
+    if (!slab) {
+      throw new NotFoundException('Chapa não encontrada.');
+    }
+
+    if (dto.number !== undefined) {
+      const existingSlab = await this.prisma.slab.findFirst({
+        where: {
+          bundleId,
+          number: dto.number,
+          deletedAt: null,
+          id: {
+            not: slabId,
+          },
+        },
+      });
+
+      if (existingSlab) {
+        throw new ConflictException(
+          'Já existe uma chapa com esse número neste Bundle.',
+        );
+      }
+    }
+
+    const length = dto.length !== undefined
+      ? Number(dto.length)
+      : Number(slab.length);
+
+    const height = dto.height !== undefined
+      ? Number(dto.height)
+      : Number(slab.height);
+
+    if (
+      !Number.isFinite(length) ||
+      !Number.isFinite(height) ||
+      length <= 0 ||
+      height <= 0
+    ) {
+      throw new BadRequestException(
+        'Comprimento e altura devem ser maiores que zero.',
+      );
+    }
+
+    const area = Number((length * height).toFixed(3));
+
+    const updatedSlab = await this.prisma.slab.update({
+      where: {
+        id: slabId,
+      },
+      data: {
+        ...(dto.number !== undefined && {
+          number: dto.number,
+        }),
+
+        ...(dto.length !== undefined && {
+          length: dto.length,
+        }),
+
+        ...(dto.height !== undefined && {
+          height: dto.height,
+        }),
+
+        area,
+      },
+    });
+
+    return updatedSlab;
+  }
+
+  async remove(
+    bundleId: number,
+    slabId: number,
+    user: AuthenticatedUser,
+  ) {
+    const companyId = this.getCompanyId(user);
+
+    const bundle = await this.prisma.bundle.findFirst({
+      where: {
+        id: bundleId,
+        companyId,
+        deletedAt: null,
+      },
+    });
+
+    if (!bundle) {
+      throw new NotFoundException('Bundle não encontrado.');
+    }
+
+    const slab = await this.prisma.slab.findFirst({
+      where: {
+        id: slabId,
+        bundleId,
+        deletedAt: null,
+      },
+    });
+
+    if (!slab) {
+      throw new NotFoundException('Chapa não encontrada.');
+    }
+
+    await this.prisma.slab.update({
+      where: {
+        id: slabId,
+      },
+      data: {
+        status: 'INACTIVE',
+        deletedAt: new Date(),
+      },
+    });
+
+    return {
+      message: 'Chapa removida com sucesso.',
+    };
   }
 }

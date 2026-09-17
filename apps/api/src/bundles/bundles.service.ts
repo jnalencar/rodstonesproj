@@ -92,10 +92,6 @@ export class BundlesService {
       );
     }
 
-    console.log('SLABS:', dto.slabs);
-    console.log('IS ARRAY:', Array.isArray(dto.slabs));
-    console.log('TYPE:', typeof dto.slabs);
-
     let slabs: CreateSlabDto[];
 
     try {
