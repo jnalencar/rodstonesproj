@@ -56,6 +56,13 @@ enum BundleStatus {
   INACTIVE
 }
 
+enum SlabStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  INACTIVE
+}
+
 model Company {
   id        Int           @id @default(autoincrement())
   name      String
@@ -69,15 +76,18 @@ model Company {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  materials Material[]
-  bundles   Bundle[]
+  materials               Material[]
+  bundles                 Bundle[]
+  qualities               Quality[]
+  finishes                Finish[]
+  materialTypes           MaterialType[]
+  materialClassifications MaterialClassification[]
 
   memberships CompanyMembership[]
-  partners    PartnerCompany[]
+  roles       Role[]
 
-  partner Partner?
-
-  roles Role[]
+  partners PartnerCompany[]
+  partner  Partner?
 
   @@index([status])
   @@index([deletedAt])
@@ -276,14 +286,19 @@ model Bundle {
   companyId  Int
   materialId Int
 
-  block      String?
+  materialTypeId           Int
+  materialClassificationId Int
+  qualityId                Int
+  finishId                 Int
+
   bundleCode String
+  block      String?
+  location   String?
 
   thickness Decimal?
   weight    Decimal?
 
-  referencePrice Decimal?
-  purchasePrice  Decimal?
+  basePrice Decimal?
 
   status BundleStatus @default(PENDING)
 
@@ -294,11 +309,21 @@ model Bundle {
   company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   material Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
 
-  image BundleImage?
+  materialType           MaterialType           @relation(fields: [materialTypeId], references: [id], onDelete: Restrict)
+  materialClassification MaterialClassification @relation(fields: [materialClassificationId], references: [id], onDelete: Restrict)
+  quality                Quality                @relation(fields: [qualityId], references: [id], onDelete: Restrict)
+  finish                 Finish                 @relation(fields: [finishId], references: [id], onDelete: Restrict)
+
+  images BundleImage[]
+  slabs Slab[]
 
   @@unique([companyId, bundleCode])
   @@index([companyId])
   @@index([materialId])
+  @@index([materialTypeId])
+  @@index([materialClassificationId])
+  @@index([qualityId])
+  @@index([finishId])
   @@index([status])
   @@index([deletedAt])
 }
@@ -313,10 +338,128 @@ model BundleImage {
   mimeType     String
   size         Int
 
+  isPrimary Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
 
   @@index([bundleId])
+}
+
+model Slab {
+  id Int @id @default(autoincrement())
+
+  bundleId Int
+  number   Int
+
+  length Decimal?
+  height Decimal?
+  area   Decimal?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  status SlabStatus @default(AVAILABLE)
+
+  bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
+  images SlabImage[]
+
+  @@unique([bundleId, number])
+  @@index([bundleId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model SlabImage {
+  id Int @id @default(autoincrement())
+
+  slabId Int @unique
+
+  storageKey   String
+  originalName String
+  mimeType     String
+  size         Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slab Slab @relation(fields: [slabId], references: [id], onDelete: Cascade)
+
+  @@index([slabId])
+}
+
+model Quality {
+  id Int @id @default(autoincrement())
+
+  companyId Int?
+
+  name String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bundles Bundle[]
+
+  @@index([companyId])
+  @@index([deletedAt])
+}
+
+model Finish {
+  id Int @id @default(autoincrement())
+
+  companyId Int?
+
+  name String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bundles Bundle[]
+
+  @@index([companyId])
+  @@index([deletedAt])
+}
+
+model MaterialType {
+  id Int @id @default(autoincrement())
+
+  companyId Int?
+  name      String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bundles Bundle[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([deletedAt])
+}
+
+model MaterialClassification {
+  id Int @id @default(autoincrement())
+
+  companyId Int?
+  name      String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bundles Bundle[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([deletedAt])
 }
