@@ -377,7 +377,7 @@ model Slab {
 model SlabImage {
   id Int @id @default(autoincrement())
 
-  slabId Int @unique
+  slabId Int
 
   storageKey   String
   originalName String

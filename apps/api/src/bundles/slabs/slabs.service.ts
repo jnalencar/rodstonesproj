@@ -7,6 +7,7 @@ import {
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
+import { StorageService } from '../../storage/storage.service';
 
 import { CreateSlabDto } from './dto/create-slab.dto';
 import { UpdateSlabDto } from './dto/update-slab.dto';
@@ -15,6 +16,7 @@ import { UpdateSlabDto } from './dto/update-slab.dto';
 export class SlabsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
   ) { }
 
   async create(
@@ -123,7 +125,7 @@ export class SlabsService {
       );
     }
 
-    return this.prisma.slab.findMany({
+    const slabs = await this.prisma.slab.findMany({
       where: {
         bundleId,
         deletedAt: null,
@@ -135,6 +137,13 @@ export class SlabsService {
         images: true,
       },
     });
+
+    return Promise.all(
+      slabs.map(async (slab) => ({
+        ...slab,
+        images: await this.serializeSlabImages(slab.images),
+      })),
+    );
   }
 
   async findOne(
@@ -178,7 +187,10 @@ export class SlabsService {
       );
     }
 
-    return slab;
+    return {
+      ...slab,
+      images: await this.serializeSlabImages(slab.images),
+    };
   }
 
   async update(
@@ -326,5 +338,20 @@ export class SlabsService {
     return {
       message: 'Chapa removida com sucesso.',
     };
+  }
+
+  private async serializeSlabImages(images: any[]) {
+    return Promise.all(
+      images.map(async (image) => {
+        const url = await this.storageService.getPresignedUrl(
+          image.storageKey,
+        );
+
+        return {
+          ...image,
+          url,
+        };
+      }),
+    );
   }
 }
