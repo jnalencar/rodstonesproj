@@ -17,7 +17,7 @@ export class BundleImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-  ) {}
+  ) { }
 
   private getCompanyId(user: AuthenticatedUser): number {
     if (!user.companyId) {
@@ -182,7 +182,10 @@ export class BundleImagesService {
   ) {
     const companyId = this.getCompanyId(user);
 
-    await this.validateBundle(bundleId, companyId);
+    await this.validateBundle(
+      bundleId,
+      companyId,
+    );
 
     const image = await this.prisma.bundleImage.findFirst({
       where: {
@@ -197,21 +200,55 @@ export class BundleImagesService {
       );
     }
 
-    if (image.isPrimary) {
+    const remainingImages =
+      await this.prisma.bundleImage.findMany({
+        where: {
+          bundleId,
+          id: {
+            not: imageId,
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+    if (image.isPrimary && remainingImages.length === 0) {
       throw new ConflictException(
-        'A imagem principal não pode ser excluída.',
+        'O bundle precisa possuir pelo menos uma imagem.',
       );
     }
 
-    await this.storageService.delete(
-      image.storageKey,
-    );
+    await this.prisma.$transaction(async (tx) => {
+      await tx.bundleImage.delete({
+        where: {
+          id: imageId,
+        },
+      });
 
-    await this.prisma.bundleImage.delete({
-      where: {
-        id: image.id,
-      },
+      if (
+        image.isPrimary &&
+        remainingImages.length > 0
+      ) {
+        await tx.bundleImage.update({
+          where: {
+            id: remainingImages[0].id,
+          },
+          data: {
+            isPrimary: true,
+          },
+        });
+      }
     });
+
+    try {
+      await this.storageService.delete(
+        image.storageKey,
+      );
+    } catch {
+      // O registro do banco já foi removido.
+      // O erro de Storage não deve desfazer a operação.
+    }
 
     return {
       message: 'Imagem removida com sucesso.',

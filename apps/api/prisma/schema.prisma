@@ -331,7 +331,7 @@ model Bundle {
 model BundleImage {
   id Int @id @default(autoincrement())
 
-  bundleId Int @unique
+  bundleId Int
 
   storageKey   String
   originalName String

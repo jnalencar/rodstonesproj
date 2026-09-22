@@ -34,6 +34,7 @@ const permissions: { code: string; description: string }[] = [
   { code: 'slab:create', description: 'Criar slabs' },
   { code: 'slab:update', description: 'Atualizar slabs' },
   { code: 'slab:delete', description: 'Excluir slabs' },
+  { code: 'slab:availability', description: 'Gerenciar disponibilidade de slabs' },
 
   { code: 'slab:image:read', description: 'Visualizar imagens de slabs' },
   { code: 'slab:image:create', description: 'Criar imagens de slabs' },
@@ -133,6 +134,7 @@ const rolePermissions = {
     'slab:image:create',
     'slab:image:update',
     'slab:image:delete',
+    'slab:availability',
 
     'share:read',
     'share:create',
@@ -204,6 +206,7 @@ const rolePermissions = {
     'slab:create',
     'slab:update',
     'slab:delete',
+    'slab:availability',
 
     'slab:image:read',
     'slab:image:create',
@@ -270,6 +273,7 @@ const rolePermissions = {
     'slab:create',
     'slab:update',
     'slab:delete',
+    'slab:availability',
 
     'slab:image:read',
     'slab:image:create',
@@ -306,6 +310,7 @@ const rolePermissions = {
     'bundle:image:read',
 
     'slab:read',
+    'slab:availability',
 
     'slab:image:read',
 
@@ -334,6 +339,7 @@ const rolePermissions = {
     'bundle:image:read',
 
     'slab:read',
+    'slab:availability',
     'slab:image:read',
 
     'share:read',
@@ -377,6 +383,7 @@ const rolePermissions = {
     'bundle:image:read',
 
     'slab:read',
+    'slab:availability',
     'slab:image:read',
 
     'partner:price:read',
