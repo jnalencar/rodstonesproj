@@ -63,6 +63,18 @@ enum SlabStatus {
   INACTIVE
 }
 
+enum ReservationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ShareStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Company {
   id        Int           @id @default(autoincrement())
   name      String
@@ -89,6 +101,9 @@ model Company {
   partners PartnerCompany[]
   partner  Partner?
 
+  reservationRequest ReservationRequest[]
+  shares Share[]
+
   @@index([status])
   @@index([deletedAt])
 }
@@ -108,9 +123,9 @@ model User {
   memberships   CompanyMembership[]
   refreshTokens RefreshToken[]
 
-  /// createdShares             Share[]              @relation("ShareCreatedBy")
-  /// assignedReservationRequests ReservationRequest[] @relation("ReservationAssignedTo")
-  /// approvedReservations      Reservation[]        @relation("ReservationApprovedBy")
+  createdShares             Share[]                 /// @relation("ShareCreatedBy")
+  assignedReservationRequests ReservationRequest[]  ///@relation("ReservationAssignedTo")
+  /// approvedReservations      Reservation[]           ///@relation("ReservationApprovedBy")
   /// reservationStatusHistory  ReservationStatusHistory[]
   /// notifications             NotificationRecipient[]
   /// auditEvents               AuditEvent[]
@@ -317,6 +332,8 @@ model Bundle {
   images BundleImage[]
   slabs Slab[]
 
+  shareItems ShareItem[]
+
   @@unique([companyId, bundleCode])
   @@index([companyId])
   @@index([materialId])
@@ -367,6 +384,7 @@ model Slab {
   bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
 
   images SlabImage[]
+  reservationRequestItems ReservationRequestItem[]
 
   @@unique([bundleId, number])
   @@index([bundleId])
@@ -463,3 +481,87 @@ model MaterialClassification {
   @@index([companyId])
   @@index([deletedAt])
 }
+
+model ReservationRequest {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+  requesterId Int
+
+  status ReservationRequestStatus @default(PENDING)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  company   Company @relation(fields: [companyId], references: [id])
+  requester User    @relation(fields: [requesterId], references: [id])
+
+  items ReservationRequestItem[]
+
+  @@index([companyId])
+  @@index([requesterId])
+  @@index([status])
+}
+
+model ReservationRequestItem {
+  id Int @id @default(autoincrement())
+
+  reservationRequestId Int
+  slabId Int
+
+  reservationRequest ReservationRequest @relation(fields: [reservationRequestId], references: [id], onDelete: Cascade)
+
+  slab Slab @relation(fields: [slabId], references: [id], onDelete: Restrict)
+
+  @@unique([reservationRequestId, slabId])
+  @@index([slabId])
+}
+
+model Share {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+  createdById Int
+
+  token String @unique
+
+  title String?
+  expiresAt DateTime?
+
+  status ShareStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  items ShareItem[]
+
+  @@index([companyId])
+  @@index([createdById])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([deletedAt])
+}
+
+model ShareItem {
+  id Int @id @default(autoincrement())
+
+  shareId Int
+  bundleId Int
+
+  createdAt DateTime @default(now())
+
+  share  Share  @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+
+  @@unique([shareId, bundleId])
+  @@index([shareId])
+  @@index([bundleId])
+}
+
