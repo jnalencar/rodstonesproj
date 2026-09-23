@@ -11,6 +11,11 @@ import { StorageService } from '../../storage/storage.service';
 
 import { CreateSlabDto } from './dto/create-slab.dto';
 import { UpdateSlabDto } from './dto/update-slab.dto';
+import { UpdateSlabStatusDto } from './dto/update-slab-status.dto';
+
+import {
+  SlabStatus,
+} from '../../../generated/prisma/client';
 
 @Injectable()
 export class SlabsService {
@@ -354,4 +359,93 @@ export class SlabsService {
       }),
     );
   }
+
+  async updateStatus(
+  bundleId: number,
+  slabId: number,
+  dto: UpdateSlabStatusDto,
+  user: AuthenticatedUser,
+) {
+  const companyId = this.getCompanyId(user);
+
+  const slab = await this.prisma.slab.findFirst({
+    where: {
+      id: slabId,
+      bundleId,
+      deletedAt: null,
+      bundle: {
+        companyId,
+        deletedAt: null,
+      },
+    },
+    include: {
+      bundle: true,
+    },
+  });
+
+  if (!slab) {
+    throw new NotFoundException(
+      'Chapa não encontrada neste bundle.',
+    );
+  }
+
+  if (slab.status === dto.status) {
+    throw new ConflictException(
+      `A chapa já está com o status ${dto.status}.`,
+    );
+  }
+
+  this.validateStatusTransition(
+    slab.status,
+    dto.status,
+  );
+
+  const updatedSlab =
+    await this.prisma.slab.update({
+      where: {
+        id: slab.id,
+      },
+      data: {
+        status: dto.status,
+      },
+      include: {
+        images: true,
+      },
+    });
+
+  return updatedSlab;
+}
+
+private validateStatusTransition(
+  currentStatus: SlabStatus,
+  newStatus: SlabStatus,
+) {
+  const allowedTransitions: Record<
+    SlabStatus,
+    SlabStatus[]
+  > = {
+    AVAILABLE: [
+      SlabStatus.RESERVED,
+      SlabStatus.INACTIVE,
+    ],
+
+    RESERVED: [
+      SlabStatus.AVAILABLE,
+      SlabStatus.SOLD,
+    ],
+
+    SOLD: [],
+
+    INACTIVE: [],
+  };
+
+  const allowed =
+    allowedTransitions[currentStatus];
+
+  if (!allowed.includes(newStatus)) {
+    throw new ConflictException(
+      `Não é possível alterar o status da chapa de ${currentStatus} para ${newStatus}.`,
+    );
+  }
+}
 }

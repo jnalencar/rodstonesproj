@@ -18,6 +18,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
 import { UpdateSlabDto } from './dto/update-slab.dto';
+import { UpdateSlabStatusDto } from './dto/update-slab-status.dto';
 
 @Controller('bundles/:bundleId/slabs')
 export class SlabsController {
@@ -108,6 +109,23 @@ export class SlabsController {
     return this.slabsService.remove(
       bundleId,
       slabId,
+      user,
+    );
+  }
+
+  @Patch(':slabId/status')
+  @CompanyRequired()
+  @Permissions('slab:availability')
+  updateStatus(
+    @Param('bundleId', ParseIntPipe) bundleId: number,
+    @Param('slabId', ParseIntPipe) slabId: number,
+    @Body() dto: UpdateSlabStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.slabsService.updateStatus(
+      bundleId,
+      slabId,
+      dto,
       user,
     );
   }
