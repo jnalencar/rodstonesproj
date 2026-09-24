@@ -18,9 +18,10 @@ import { MaterialsModule } from './materials/materials.module';
 import { StorageModule } from './storage/storage.module';
 import { BundlesModule } from './bundles/bundles.module';
 import { SharesModule } from './shares/shares.module';
+import { ReservationsModule } from './reservation/reservations.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule, PartnersModule, PartnerCompaniesModule, MaterialsModule, StorageModule, BundlesModule, SharesModule],
+  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule, PartnersModule, PartnerCompaniesModule, MaterialsModule, StorageModule, BundlesModule, SharesModule, ReservationsModule],
   controllers: [AppController],
   providers: [
     AppService,

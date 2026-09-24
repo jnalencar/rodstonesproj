@@ -124,7 +124,7 @@ model User {
   refreshTokens RefreshToken[]
 
   createdShares             Share[]                 /// @relation("ShareCreatedBy")
-  assignedReservationRequests ReservationRequest[]  ///@relation("ReservationAssignedTo")
+  /// assignedReservationRequests ReservationRequest[]  ///@relation("ReservationAssignedTo")
   /// approvedReservations      Reservation[]           ///@relation("ReservationApprovedBy")
   /// reservationStatusHistory  ReservationStatusHistory[]
   /// notifications             NotificationRecipient[]
@@ -486,23 +486,22 @@ model ReservationRequest {
   id Int @id @default(autoincrement())
 
   companyId Int
-  requesterId Int
+  shareId   Int
+
+  message       String?
 
   status ReservationRequestStatus @default(PENDING)
 
-  notes String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  deletedAt DateTime?
 
-  company   Company @relation(fields: [companyId], references: [id])
-  requester User    @relation(fields: [requesterId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  share   Share   @relation(fields: [shareId], references: [id], onDelete: Restrict)
 
   items ReservationRequestItem[]
 
   @@index([companyId])
-  @@index([requesterId])
+  @@index([shareId])
   @@index([status])
 }
 
@@ -510,7 +509,9 @@ model ReservationRequestItem {
   id Int @id @default(autoincrement())
 
   reservationRequestId Int
-  slabId Int
+  slabId               Int
+
+  createdAt DateTime @default(now())
 
   reservationRequest ReservationRequest @relation(fields: [reservationRequestId], references: [id], onDelete: Cascade)
 
@@ -529,6 +530,11 @@ model Share {
   token String @unique
 
   title String?
+
+  customerName  String?
+  customerEmail String?
+  customerPhone String?
+
   expiresAt DateTime?
 
   status ShareStatus @default(ACTIVE)
@@ -541,6 +547,7 @@ model Share {
   createdBy User    @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   items ShareItem[]
+  reservationRequests ReservationRequest[]
 
   @@index([companyId])
   @@index([createdById])

@@ -16,12 +16,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateShareDto } from './dto/create-share.dto';
 
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { StorageService } from 'src/storage/storage.service';
 
 @Injectable()
 export class SharesService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly storageService: StorageService,
+  ) { }
 
   async create(
     dto: CreateShareDto,
@@ -88,7 +90,13 @@ export class SharesService {
         token: randomUUID(),
 
         title: dto.title,
-        expiresAt,
+        expiresAt: dto.expiresAt
+      ? new Date(dto.expiresAt)
+      : null,
+
+        customerName: dto.customerName,
+        customerEmail: dto.customerEmail,
+        customerPhone: dto.customerPhone,
 
         status: ShareStatus.ACTIVE,
 
@@ -237,15 +245,17 @@ export class SharesService {
 
       company: share.company,
 
-      bundles: share.items
-        .filter(
-          (item) =>
-            item.bundle.deletedAt === null &&
-            item.bundle.status !== 'INACTIVE',
-        )
-        .map((item) =>
-          this.serializePublicBundle(item.bundle),
-        ),
+      bundles: await Promise.all(
+        share.items
+          .filter(
+            (item) =>
+              item.bundle.deletedAt === null &&
+              item.bundle.status !== 'INACTIVE',
+          )
+          .map((item) =>
+            this.serializePublicBundle(item.bundle),
+          ),
+      ),
     };
   }
 
@@ -268,7 +278,47 @@ export class SharesService {
     };
   }
 
-  private serializePublicBundle(bundle: any) {
+  private async serializePublicBundle(bundle: any) {
+    const images = await Promise.all(
+      bundle.images.map(async (image: any) => ({
+        id: image.id,
+        url: await this.storageService.getPresignedUrl(
+          image.storageKey,
+        ),
+        originalName: image.originalName,
+        mimeType: image.mimeType,
+        isPrimary: image.isPrimary,
+      })),
+    );
+
+    const slabs = await Promise.all(
+      bundle.slabs.map(async (slab: any) => {
+        const slabImages = await Promise.all(
+          slab.images.map(async (image: any) => ({
+            id: image.id,
+            url: await this.storageService.getPresignedUrl(
+              image.storageKey,
+            ),
+            originalName: image.originalName,
+            mimeType: image.mimeType,
+          })),
+        );
+
+        return {
+          id: slab.id,
+          number: slab.number,
+
+          length: slab.length,
+          height: slab.height,
+          area: slab.area,
+
+          status: slab.status,
+
+          images: slabImages,
+        };
+      }),
+    );
+
     return {
       id: bundle.id,
       bundleCode: bundle.bundleCode,
@@ -286,31 +336,8 @@ export class SharesService {
       quality: bundle.quality,
       finish: bundle.finish,
 
-      images: bundle.images.map((image: any) => ({
-        id: image.id,
-        storageKey: image.storageKey,
-        originalName: image.originalName,
-        mimeType: image.mimeType,
-        isPrimary: image.isPrimary,
-      })),
-
-      slabs: bundle.slabs.map((slab: any) => ({
-        id: slab.id,
-        number: slab.number,
-
-        length: slab.length,
-        height: slab.height,
-        area: slab.area,
-
-        status: slab.status,
-
-        images: slab.images.map((image: any) => ({
-          id: image.id,
-          storageKey: image.storageKey,
-          originalName: image.originalName,
-          mimeType: image.mimeType,
-        })),
-      })),
+      images,
+      slabs,
     };
   }
 
