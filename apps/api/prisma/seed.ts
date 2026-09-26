@@ -91,6 +91,11 @@ const permissions: { code: string; description: string }[] = [
   { code: 'material:update', description: 'Atualizar materiais' },
   { code: 'material:delete', description: 'Excluir materiais' },
 
+  { code: 'client:read', description: 'Visualizar clientes' },
+  { code: 'client:create', description: 'Criar clientes' },
+  { code: 'client:update', description: 'Atualizar clientes' },
+  { code: 'client:delete', description: 'Excluir clientes' },
+
 ];
 
 const roles: { code: string; description: string; isSystem: boolean }[] = [
@@ -180,6 +185,11 @@ const rolePermissions = {
     'material:create',
     'material:update',
     'material:delete',
+
+    'client:read',
+    'client:create',
+    'client:update',
+    'client:delete',
   ],
 
   COMPANY_ADMIN: [
@@ -251,6 +261,11 @@ const rolePermissions = {
     'material:create',
     'material:update',
     'material:delete',
+
+    'client:read',
+    'client:create',
+    'client:update',
+    'client:delete',
   ],
 
   MANAGER: [
@@ -298,6 +313,11 @@ const rolePermissions = {
     'audit:read',
 
     'notification:read',
+
+    'client:read',
+    'client:create',
+    'client:update',
+    'client:delete',
   ],
 
   SELLER: [
@@ -325,6 +345,11 @@ const rolePermissions = {
     'reservation:cancel',
 
     'notification:read',
+
+    'client:read',
+    'client:create',
+    'client:update',
+    'client:delete',
   ],
 
   PARTNER_ADMIN: [
@@ -372,6 +397,11 @@ const rolePermissions = {
 
     'notification:read',
     'notification:manage',
+
+    'client:read',
+    'client:create',
+    'client:update',
+    'client:delete',
   ],
 
   PARTNER_SELLER: [
@@ -398,6 +428,11 @@ const rolePermissions = {
     'reservation:cancel',
 
     'notification:read',
+
+    'client:read',
+    'client:create',
+    'client:update',
+    'client:delete',
   ],
 };
 

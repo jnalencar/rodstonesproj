@@ -2,10 +2,8 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
-  IsEmail,
   IsInt,
   IsOptional,
-  IsPhoneNumber,
   IsString,
   MaxLength,
 } from 'class-validator';

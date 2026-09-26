@@ -104,6 +104,8 @@ model Company {
   reservationRequest ReservationRequest[]
   shares Share[]
 
+  clients Client[]
+
   @@index([status])
   @@index([deletedAt])
 }
@@ -526,14 +528,11 @@ model Share {
 
   companyId Int
   createdById Int
+  clientId Int?
 
   token String @unique
 
   title String?
-
-  customerName  String?
-  customerEmail String?
-  customerPhone String?
 
   expiresAt DateTime?
 
@@ -545,12 +544,14 @@ model Share {
 
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy User    @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  client    Client? @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
   items ShareItem[]
   reservationRequests ReservationRequest[]
 
   @@index([companyId])
   @@index([createdById])
+  @@index([clientId])
   @@index([status])
   @@index([expiresAt])
   @@index([deletedAt])
@@ -572,3 +573,27 @@ model ShareItem {
   @@index([bundleId])
 }
 
+model Client {
+  id Int @id @default(autoincrement())
+
+  companyId Int
+
+  name  String
+  email String?
+  phone String?
+
+  document String?
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  shares Share[]
+
+  @@index([companyId])
+  @@index([name])
+  @@index([deletedAt])
+}

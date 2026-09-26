@@ -13,22 +13,14 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateShareDto {
-  @IsString()
-  @MaxLength(150)
-  customerName!: string;
-
-  @IsOptional()
-  @IsEmail()
-  customerEmail?: string;
-
-  @IsOptional()
-  @IsPhoneNumber('BR')
-  customerPhone?: string;
-
   @IsOptional()
   @IsString()
   @MaxLength(150)
   title?: string;
+
+  @IsInt()
+  @Type(() => Number)
+  clientId!: number;
 
   @IsOptional()
   @IsDateString()

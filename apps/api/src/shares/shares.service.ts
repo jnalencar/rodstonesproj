@@ -39,6 +39,24 @@ export class SharesService {
       );
     }
 
+    const client = await this.prisma.client.findFirst({
+      where: {
+        id: dto.clientId,
+        companyId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!client) {
+      throw new NotFoundException(
+        'Cliente não encontrado.',
+      );
+    }
+
     const bundles = await this.prisma.bundle.findMany({
       where: {
         id: {
@@ -91,12 +109,8 @@ export class SharesService {
 
         title: dto.title,
         expiresAt: dto.expiresAt
-      ? new Date(dto.expiresAt)
-      : null,
-
-        customerName: dto.customerName,
-        customerEmail: dto.customerEmail,
-        customerPhone: dto.customerPhone,
+          ? new Date(dto.expiresAt)
+          : null,
 
         status: ShareStatus.ACTIVE,
 
@@ -108,6 +122,15 @@ export class SharesService {
       },
 
       include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+
         items: {
           include: {
             bundle: {
@@ -120,7 +143,6 @@ export class SharesService {
         },
       },
     });
-
     return this.serializeShare(share);
   }
 
@@ -138,6 +160,15 @@ export class SharesService {
       },
 
       include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+
         items: {
           select: {
             id: true,
@@ -267,6 +298,15 @@ export class SharesService {
       status: share.status,
       expiresAt: share.expiresAt,
       createdAt: share.createdAt,
+
+      client: share.client
+      ? {
+          id: share.client.id,
+          name: share.client.name,
+          email: share.client.email,
+          phone: share.client.phone,
+        }
+      : null,
 
       itemCount: share.items.length,
 

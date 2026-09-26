@@ -34,10 +34,7 @@ export class ReservationsService {
                     id: true,
                     companyId: true,
                     expiresAt: true,
-
-                    customerName: true,
-                    customerEmail: true,
-                    customerPhone: true,
+                    clientId: true,
                 },
             });
 
