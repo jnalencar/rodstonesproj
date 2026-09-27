@@ -95,6 +95,47 @@ p {
   margin: 0;
 }
 
+:root {
+  color: #26312b;
+  background: #f6f4ef;
+  color-scheme: light;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-synthesis: none;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100svh;
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  max-width: none;
+  min-height: 100svh;
+  margin: 0;
+  border: 0;
+  text-align: left;
+}
+
+h1,
+h2,
+h3,
+p {
+  letter-spacing: 0;
+}
+
 code,
 .counter {
   font-family: var(--mono);
