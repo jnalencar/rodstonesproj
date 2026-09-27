@@ -1,0 +1,331 @@
+.board-main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 32px 32px 0;
+}
+
+.board-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.board-heading .eyebrow {
+  margin-bottom: 8px;
+}
+
+.board-heading h1 {
+  margin: 0;
+  color: #26312b;
+  font-family: Georgia, serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.board-subtitle {
+  margin: 8px 0 0;
+  color: #727a72;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.board-company-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 180px;
+  padding: 10px 14px;
+  border-left: 2px solid #a05b43;
+}
+
+.board-company-label span,
+.offer-client > span,
+.offer-bundles-heading > span {
+  color: #838a82;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.board-company-label strong {
+  overflow: hidden;
+  color: #354239;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-scroll {
+  flex: 1;
+  min-height: 460px;
+  overflow-x: auto;
+  scrollbar-color: #b8c0b7 transparent;
+  scrollbar-width: thin;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(238px, 1fr));
+  gap: 13px;
+  width: max(100%, 1540px);
+  height: 100%;
+  min-width: 1540px;
+}
+
+.kanban-column {
+  display: flex;
+  height: 100%;
+  min-height: 460px;
+  flex-direction: column;
+  padding: 13px;
+  border: 1px solid #e0e3dc;
+  border-radius: 4px;
+  background: #e9ebe5;
+}
+
+.column-heading {
+  display: flex;
+  min-height: 52px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 1px 12px;
+  border-bottom: 1px solid #d7dbd3;
+}
+
+.column-heading h2 {
+  margin: 0;
+  color: #303b33;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.column-heading p {
+  margin: 4px 0 0;
+  color: #7b837b;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.column-count {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid #d6dad3;
+  border-radius: 3px;
+  color: #69736a;
+  background: #f1f2ee;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.column-cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.offer-card {
+  padding: 13px;
+  border: 1px solid #e3e5df;
+  border-radius: 3px;
+  background: #fffefa;
+  box-shadow: 0 2px 5px rgb(38 49 43 / 4%);
+}
+
+.offer-card-topline,
+.offer-bundles-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.offer-card-topline time {
+  color: #858b84;
+  font-size: 10px;
+}
+
+.offer-status {
+  padding: 3px 7px;
+  border-radius: 2px;
+  color: #767d76;
+  background: #eceeea;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.offer-status.is-active {
+  color: #3d6849;
+  background: #e5eee3;
+}
+
+.offer-card h3 {
+  margin: 12px 0 14px;
+  color: #2e3931;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.offer-client {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.offer-client strong {
+  color: #515b53;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.offer-bundles {
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid #eceee8;
+}
+
+.offer-bundles-heading strong {
+  color: #566d59;
+  font-size: 11px;
+}
+
+.bundle-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.bundle-tag {
+  max-width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #e1e5de;
+  border-radius: 2px;
+  color: #58645a;
+  background: #f5f6f2;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+.bundle-tag-more {
+  color: #855b48;
+  background: #f5eee9;
+}
+
+.offer-expiration {
+  margin: 10px 0 0;
+  color: #868d85;
+  font-size: 10px;
+}
+
+.column-empty {
+  display: flex;
+  min-height: 176px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 13px;
+  border: 1px dashed #cfd5cb;
+  border-radius: 3px;
+  color: #858c83;
+  text-align: center;
+}
+
+.empty-mark {
+  display: grid;
+  width: 27px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #d0d6cd;
+  border-radius: 50%;
+  color: #758276;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.column-empty p,
+.column-loading,
+.column-error {
+  max-width: 190px;
+  margin: 0;
+  color: #7b837a;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.column-error {
+  max-width: none;
+  padding: 10px;
+  border: 1px solid #e7c9c2;
+  border-radius: 3px;
+  color: #9b4438;
+  background: #fbefec;
+}
+
+.column-loading {
+  padding: 10px 2px;
+}
+
+.empty-reservations {
+  margin-top: 2px;
+}
+
+.empty-negotiation,
+.empty-payment,
+.empty-logistics {
+  min-height: 130px;
+  border-color: #d8dcd5;
+  background: rgb(255 255 250 / 28%);
+}
+
+.empty-invoices {
+  border-color: #ded1c8;
+  background: #f1eee9;
+}
+
+@media (max-width: 760px) {
+  .board-main {
+    padding: 26px 16px 0;
+  }
+
+  .board-heading {
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .board-heading h1 {
+    font-size: 28px;
+  }
+
+  .board-company-label {
+    display: none;
+  }
+
+  .kanban-board {
+    grid-template-columns: repeat(6, minmax(238px, 1fr));
+    width: max(100%, 1510px);
+    min-width: 1510px;
+  }
+
+}
+
+@media (max-width: 420px) {
+}
