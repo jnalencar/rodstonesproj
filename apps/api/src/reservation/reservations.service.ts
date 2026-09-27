@@ -68,22 +68,26 @@ export class ReservationsService {
                 }>
             >(
                 Prisma.sql`
-          SELECT
-            s."id",
-            s."bundleId",
-            s."status"
-          FROM "Slab" s
-          INNER JOIN "ShareItem" si
-            ON si."bundleId" = s."bundleId"
-          INNER JOIN "Share" sh
-            ON sh."id" = si."shareId"
-          WHERE
-            s."id" IN (${Prisma.join(dto.slabIds)})
-            AND s."deletedAt" IS NULL
-            AND si."shareId" = ${share.id}
-            AND sh."companyId" = ${share.companyId}
-          FOR UPDATE
-        `,
+                    SELECT
+                    s."id",
+                    s."bundleId",
+                    s."status"
+                    FROM "Slab" s
+                    INNER JOIN "ShareItem" si
+                    ON si."bundleId" = s."bundleId"
+                    INNER JOIN "Share" sh
+                    ON sh."id" = si."shareId"
+                    INNER JOIN "Bundle" b
+                    ON b."id" = s."bundleId"
+                    WHERE
+                    s."id" IN (${Prisma.join(dto.slabIds)})
+                    AND s."deletedAt" IS NULL
+                    AND b."deletedAt" IS NULL
+                    AND b."status" <> 'INACTIVE'
+                    AND si."shareId" = ${share.id}
+                    AND sh."companyId" = ${share.companyId}
+                    FOR UPDATE OF s
+                `,
             );
 
             /*
@@ -116,8 +120,7 @@ export class ReservationsService {
                     data: {
                         companyId: share.companyId,
                         shareId: share.id,
-                        message: dto.message,
-
+                        message: dto.message?.trim() || null,
                         status: 'PENDING',
 
                         items: {
@@ -127,10 +130,23 @@ export class ReservationsService {
                         },
                     },
 
-                    include: {
+                    select: {
+                        id: true,
+                        status: true,
+                        message: true,
+                        createdAt: true,
+
                         items: {
-                            include: {
-                                slab: true,
+                            select: {
+                                slabId: true,
+                                slab: {
+                                    select: {
+                                        id: true,
+                                        number: true,
+                                        status: true,
+                                        bundleId: true,
+                                    },
+                                },
                             },
                         },
                     },
@@ -153,18 +169,7 @@ export class ReservationsService {
             /*
              * 8. Retorna a solicitação
              */
-            return tx.reservationRequest.findUnique({
-                where: {
-                    id: reservationRequest.id,
-                },
-                include: {
-                    items: {
-                        include: {
-                            slab: true,
-                        },
-                    },
-                },
-            });
+            return reservationRequest;
         });
     }
 }

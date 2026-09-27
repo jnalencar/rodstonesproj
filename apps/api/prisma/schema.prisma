@@ -528,7 +528,7 @@ model Share {
 
   companyId Int
   createdById Int
-  clientId Int?
+  clientId Int
 
   token String @unique
 
@@ -544,7 +544,7 @@ model Share {
 
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy User    @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  client    Client? @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
   items ShareItem[]
   reservationRequests ReservationRequest[]

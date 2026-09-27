@@ -3,10 +3,8 @@ import {
   ArrayUnique,
   IsArray,
   IsDateString,
-  IsEmail,
   IsInt,
   IsOptional,
-  IsPhoneNumber,
   IsString,
   MaxLength,
 } from 'class-validator';

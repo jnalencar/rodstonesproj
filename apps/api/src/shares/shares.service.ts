@@ -105,6 +105,8 @@ export class SharesService {
         companyId,
         createdById: user.userId,
 
+        clientId: client.id,
+
         token: randomUUID(),
 
         title: dto.title,

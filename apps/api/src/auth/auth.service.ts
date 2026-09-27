@@ -97,6 +97,11 @@ export class AuthService {
         memberships: {
           where: {
             status: 'ACTIVE',
+            deletedAt: null,
+            company: {
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
           },
           select: {
             id: true,
