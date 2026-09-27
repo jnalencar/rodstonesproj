@@ -271,10 +271,34 @@ export class BundlesService {
       },
     });
 
+    const availableSlabCounts = bundles.length > 0
+      ? await this.prisma.slab.groupBy({
+        by: ['bundleId'],
+        where: {
+          bundleId: {
+            in: bundles.map((bundle) => bundle.id),
+          },
+          deletedAt: null,
+          status: 'AVAILABLE',
+        },
+        _count: {
+          _all: true,
+        },
+      })
+      : [];
+
+    const availableCountByBundleId = new Map(
+      availableSlabCounts.map(({ bundleId, _count }) => [
+        bundleId,
+        _count._all,
+      ]),
+    );
+
     return Promise.all(
-      bundles.map((bundle) =>
-        this.serializeBundle(bundle),
-      ),
+      bundles.map((bundle) => this.serializeBundle({
+        ...bundle,
+        availableSlabCount: availableCountByBundleId.get(bundle.id) ?? 0,
+      })),
     );
   }
 
