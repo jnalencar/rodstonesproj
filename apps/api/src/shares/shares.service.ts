@@ -44,6 +44,7 @@ export class SharesService {
         id: dto.clientId,
         companyId,
         deletedAt: null,
+        status: 'ACTIVE',
       },
       select: {
         id: true,

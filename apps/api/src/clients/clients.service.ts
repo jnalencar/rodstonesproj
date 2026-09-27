@@ -115,7 +115,9 @@ export class ClientsService {
         ...(dto.email !== undefined && {
           email: dto.email.trim() || null,
         }),
-
+        ...(dto.status !== undefined && {
+          status: dto.status,
+        }),
         ...(dto.phone !== undefined && {
           phone: dto.phone.trim() || null,
         }),
@@ -193,6 +195,7 @@ export class ClientsService {
       phone: client.phone,
       document: client.document,
       notes: client.notes,
+      status: client.status,
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
     };

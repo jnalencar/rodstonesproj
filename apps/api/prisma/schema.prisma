@@ -75,6 +75,11 @@ enum ShareStatus {
   INACTIVE
 }
 
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Company {
   id        Int           @id @default(autoincrement())
   name      String
@@ -584,6 +589,8 @@ model Client {
 
   document String?
   notes    String?
+
+  status    ClientStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
