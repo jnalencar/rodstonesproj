@@ -4,6 +4,7 @@ import { AppShell } from './AppShell'
 import type { AppSection } from './app.types'
 import { AuthScreen } from '../features/auth/AuthScreen'
 import { BundlesPage } from '../features/bundles/BundlesPage'
+import { ClientsPage } from '../features/clients/ClientsPage'
 import { useAuth } from '../features/auth/useAuth'
 import { SalesPipelinePage } from '../features/sales-pipeline/SalesPipelinePage'
 
@@ -33,7 +34,9 @@ export default function App() {
       >
         {activeSection === 'inventory'
           ? <BundlesPage onShareCreated={() => setActiveSection('home')} />
-          : <SalesPipelinePage companyId={auth.activeCompany.id} />}
+          : activeSection === 'clients'
+            ? <ClientsPage />
+            : <SalesPipelinePage companyId={auth.activeCompany.id} />}
       </AppShell>
     )
   }

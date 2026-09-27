@@ -254,6 +254,11 @@
 
   .topbar-menu button {
     font-size: 12px;
+    padding-inline: 2px;
+  }
+
+  .topbar-company {
+    max-width: 110px;
   }
 
   .topbar-avatar {

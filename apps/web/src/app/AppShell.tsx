@@ -46,6 +46,13 @@ export function AppShell({
           >
             Estoque
           </button>
+          <button
+            type="button"
+            aria-current={activeSection === 'clients' ? 'page' : undefined}
+            onClick={() => onNavigate('clients')}
+          >
+            Clientes
+          </button>
         </nav>
 
         <div className="topbar-actions">

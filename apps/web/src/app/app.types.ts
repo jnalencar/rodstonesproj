@@ -1,1 +1,1 @@
-export type AppSection = 'home' | 'inventory'
+export type AppSection = 'home' | 'inventory' | 'clients'
