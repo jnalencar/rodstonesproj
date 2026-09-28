@@ -73,6 +73,117 @@
   background: #a05b43;
 }
 
+.public-reservation-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border: 1px solid #dfe3dc;
+  border-left: 3px solid #718574;
+  border-radius: 3px;
+  background: #fbfbf8;
+}
+
+.public-reservation-entry h2 {
+  margin: 0;
+  color: #354239;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.public-reservation-entry p {
+  margin: 5px 0 0;
+  color: #788278;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.public-reservation-entry button,
+.public-reservation-submit-row button {
+  display: inline-flex;
+  min-height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid #28382f;
+  border-radius: 3px;
+  color: #fffefa;
+  background: #28382f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  transition: background-color 140ms ease;
+}
+
+.public-reservation-entry button:hover,
+.public-reservation-submit-row button:hover:not(:disabled) {
+  background: #3d5543;
+}
+
+.public-reservation-entry button:focus-visible,
+.public-reservation-submit-row button:focus-visible,
+.public-selection-cancel:focus-visible {
+  outline: 2px solid #a05b43;
+  outline-offset: 3px;
+}
+
+.public-selection-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 13px 16px;
+  border: 1px solid #cbd7c8;
+  border-radius: 3px;
+  background: #edf2e9;
+}
+
+.public-selection-toolbar > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+}
+
+.public-selection-toolbar .public-section-label {
+  width: 100%;
+  margin: 0;
+  font-size: 9px;
+}
+
+.public-selection-toolbar strong {
+  color: #394a3c;
+  font-size: 12px;
+}
+
+.public-selection-toolbar > div > span:last-child {
+  color: #718071;
+  font-size: 10px;
+}
+
+.public-selection-cancel {
+  min-height: 34px;
+  flex-shrink: 0;
+  padding: 0 10px;
+  border: 1px solid #becbbc;
+  border-radius: 3px;
+  color: #526451;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.public-selection-cancel:hover {
+  background: #e1e9dc;
+}
+
 .public-share-bundles {
   display: flex;
   flex-direction: column;
@@ -312,6 +423,7 @@
 }
 
 .public-slab-card {
+  position: relative;
   display: grid;
   grid-template-columns: 86px minmax(0, 1fr);
   min-width: 0;
@@ -320,6 +432,27 @@
   border: 1px solid #e1e5de;
   border-radius: 3px;
   background: #fffefa;
+}
+
+.public-slab-card.is-selected {
+  border-color: #668269;
+  background: #f1f5ee;
+  box-shadow: 0 0 0 1px rgb(102 130 105 / 18%);
+}
+
+.public-slab-card.is-unavailable {
+  opacity: 0.7;
+}
+
+.public-slab-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  accent-color: #425d47;
+}
+
+.public-slab-checkbox:disabled {
+  cursor: not-allowed;
 }
 
 .public-slab-card > img,
@@ -425,6 +558,141 @@
   text-align: center;
 }
 
+.public-bundle-select-control {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  color: #536753;
+  cursor: pointer;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.public-bundle-select-control input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #425d47;
+}
+
+.public-reservation-form {
+  margin-top: 22px;
+  padding: 17px 18px;
+  border: 1px solid #dfe3dc;
+  border-radius: 3px;
+  background: #fbfbf8;
+}
+
+.public-reservation-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.public-reservation-form > label > span {
+  color: #455248;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.public-reservation-form small {
+  color: #929990;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.public-reservation-form textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 11px;
+  border: 1px solid #d7dcd4;
+  border-radius: 3px;
+  outline: none;
+  color: #334037;
+  background: #fffefa;
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+}
+
+.public-reservation-form textarea:focus-visible {
+  border-color: #718574;
+  box-shadow: 0 0 0 3px rgb(102 122 104 / 12%);
+}
+
+.public-reservation-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.public-reservation-submit-row > span {
+  color: #677468;
+  font-size: 10px;
+}
+
+.public-reservation-submit-row button:disabled {
+  border-color: #aeb7af;
+  background: #aeb7af;
+  cursor: not-allowed;
+}
+
+.public-reservation-error {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #e7c9c2;
+  border-radius: 3px;
+  color: #9b4438;
+  background: #fbefec;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.public-reservation-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid #cbd9c8;
+  border-radius: 3px;
+  background: #edf3e9;
+}
+
+.public-reservation-success > span {
+  display: grid;
+  width: 30px;
+  min-width: 30px;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  color: #fffefa;
+  background: #58765c;
+  font-size: 16px;
+}
+
+.public-reservation-success .public-section-label {
+  margin-bottom: 4px;
+}
+
+.public-reservation-success h2 {
+  margin: 0;
+  color: #354b38;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.public-reservation-success p:last-child {
+  margin: 5px 0 0;
+  color: #69786a;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 @media (max-width: 760px) {
   .public-share-header {
     min-height: 64px;
@@ -455,6 +723,17 @@
 
   .public-slabs {
     padding: 0 14px 14px;
+  }
+
+  .public-reservation-entry {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .public-reservation-entry button {
+    width: 100%;
   }
 }
 
@@ -496,5 +775,19 @@
   .public-slab-image-placeholder {
     width: 76px;
     height: 86px;
+  }
+
+  .public-bundle-select-control {
+    max-width: 92px;
+    white-space: normal;
+  }
+
+  .public-selection-toolbar {
+    align-items: flex-start;
+  }
+
+  .public-selection-cancel {
+    max-width: 100px;
+    white-space: normal;
   }
 }

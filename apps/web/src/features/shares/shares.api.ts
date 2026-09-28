@@ -70,3 +70,18 @@ export type PublicShare = {
 export function getPublicShare(token: string) {
   return requestJson<PublicShare>(`/shares/${encodeURIComponent(token)}`)
 }
+
+export function createPublicReservationRequest(
+  token: string,
+  slabIds: number[],
+  message?: string,
+) {
+  return requestJson<{ id: number; status: string }>(
+    `/shares/${encodeURIComponent(token)}/reservation-requests`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slabIds, ...(message?.trim() && { message: message.trim() }) }),
+    },
+  )
+}
