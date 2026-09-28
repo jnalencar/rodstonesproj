@@ -1,26 +1,38 @@
 import {
-  Body,
   Controller,
+  Get,
   Param,
-  Post,
+  ParseIntPipe,
 } from '@nestjs/common';
 
-import { Public } from '../auth/decorators/public.decorator';
-import { CreateReservationRequestDto } from './dto/create-reservation-request.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ReservationsService } from './reservations.service';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 
-@Controller('shares')
+@Controller('reservations')
 export class ReservationsController {
   constructor(
     private readonly reservationsService: ReservationsService,
   ) {}
 
-  @Post(':token/reservation-requests')
-  @Public()
-  create(
-    @Param('token') token: string,
-    @Body() dto: CreateReservationRequestDto,
+  @Get()
+  @Permissions('reservation:read')
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.reservationsService.create(token, dto);
+    return this.reservationsService.findAll(user);
+  }
+
+  @Get(':id')
+  @Permissions('reservation:read')
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reservationsService.findOne(
+      id,
+      user,
+    );
   }
 }

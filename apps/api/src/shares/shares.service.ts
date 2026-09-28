@@ -163,6 +163,13 @@ export class SharesService {
       },
 
       include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         client: {
           select: {
             id: true,
@@ -301,6 +308,13 @@ export class SharesService {
       status: share.status,
       expiresAt: share.expiresAt,
       createdAt: share.createdAt,
+      createdBy: share.createdBy
+        ? {
+          id: share.createdBy.id,
+          name: share.createdBy.name,
+          email: share.createdBy.email,
+        }
+        : null,
 
       client: share.client
       ? {

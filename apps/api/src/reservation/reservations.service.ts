@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     ConflictException,
+    ForbiddenException,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../../generated/prisma/client';
 
 import { CreateReservationRequestDto } from './dto/create-reservation-request.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class ReservationsService {
@@ -171,5 +173,128 @@ export class ReservationsService {
              */
             return reservationRequest;
         });
+    }
+
+    async findAll(user: AuthenticatedUser) {
+        const companyId = this.getCompanyId(user);
+
+        const reservations =
+            await this.prisma.reservationRequest.findMany({
+                where: {
+                    companyId,
+                },
+
+                orderBy: {
+                    createdAt: 'desc',
+                },
+
+                include: {
+                    share: {
+                        select: {
+                            id: true,
+                            title: true,
+                            client: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    phone: true,
+                                },
+                            },
+                        },
+                    },
+
+                    items: {
+                        include: {
+                            slab: {
+                                select: {
+                                    id: true,
+                                    number: true,
+                                    status: true,
+                                    bundle: {
+                                        select: {
+                                            id: true,
+                                            bundleCode: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+        return reservations;
+    }
+
+    async findOne(
+        id: number,
+        user: AuthenticatedUser,
+    ) {
+        const companyId = this.getCompanyId(user);
+
+        const reservation =
+            await this.prisma.reservationRequest.findFirst({
+                where: {
+                    id,
+                    companyId,
+                },
+
+                include: {
+                    share: {
+                        select: {
+                            id: true,
+                            title: true,
+                            token: true,
+                            client: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    phone: true,
+                                    document: true,
+                                },
+                            },
+                        },
+                    },
+
+                    items: {
+                        include: {
+                            slab: {
+                                include: {
+                                    bundle: {
+                                        select: {
+                                            id: true,
+                                            bundleCode: true,
+                                            material: true,
+                                            finish: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+        if (!reservation) {
+            throw new NotFoundException(
+                'Solicitação de reserva não encontrada.',
+            );
+        }
+
+        return reservation;
+    }
+
+    private getCompanyId(
+        user: AuthenticatedUser,
+    ): number {
+        if (!user.companyId) {
+            throw new ForbiddenException(
+                'Usuário não possui empresa ativa.',
+            );
+        }
+
+        return user.companyId;
     }
 }
