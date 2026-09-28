@@ -193,6 +193,13 @@ export class ReservationsService {
                         select: {
                             id: true,
                             title: true,
+                            createdBy: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                },
+                            },
                             client: {
                                 select: {
                                     id: true,
@@ -246,6 +253,13 @@ export class ReservationsService {
                             id: true,
                             title: true,
                             token: true,
+                            createdBy: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                },
+                            },
                             client: {
                                 select: {
                                     id: true,
