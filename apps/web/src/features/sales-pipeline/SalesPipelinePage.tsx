@@ -108,7 +108,7 @@ function OfferCard({
     >
       <div className="offer-card-topline">
         <span className={`offer-status ${share.status === 'ACTIVE' ? 'is-active' : ''}`}>
-          {share.status === 'ACTIVE' ? 'Ativa' : 'Inativa'}
+          {share.status === 'ACTIVE' ? 'Ativa' : share.status === 'EXPIRED' ? 'Expirada' : 'Inativa'}
         </span>
         <time dateTime={share.createdAt}>{formatDate(share.createdAt)}</time>
       </div>

@@ -20,9 +20,26 @@ import { BundlesModule } from './bundles/bundles.module';
 import { SharesModule } from './shares/shares.module';
 import { ReservationsModule } from './reservation/reservations.module';
 import { ClientsModule } from './clients/clients.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompaniesModule, CompanyMembershipsModule, UsersModule, PermissionsModule, RolesModule, PartnersModule, PartnerCompaniesModule, MaterialsModule, StorageModule, BundlesModule, SharesModule, ReservationsModule, ClientsModule],
+  imports: [
+            ScheduleModule.forRoot(),      
+            PrismaModule, 
+            AuthModule, 
+            CompaniesModule, 
+            CompanyMembershipsModule, 
+            UsersModule, 
+            PermissionsModule, 
+            RolesModule, 
+            PartnersModule, 
+            PartnerCompaniesModule, 
+            MaterialsModule, 
+            StorageModule, 
+            BundlesModule, 
+            SharesModule, 
+            ReservationsModule, 
+            ClientsModule],
   controllers: [AppController],
   providers: [
     AppService,

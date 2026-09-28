@@ -73,6 +73,7 @@ enum ReservationRequestStatus {
 enum ShareStatus {
   ACTIVE
   INACTIVE
+  EXPIRED
 }
 
 enum ClientStatus {

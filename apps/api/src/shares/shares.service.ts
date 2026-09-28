@@ -152,6 +152,20 @@ export class SharesService {
   async findAll(user: AuthenticatedUser) {
     const companyId = this.getCompanyId(user);
 
+    await this.prisma.share.updateMany({
+      where: {
+        companyId,
+        status: 'ACTIVE',
+        expiresAt: {
+          not: null,
+          lte: new Date(),
+        },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+
     const shares = await this.prisma.share.findMany({
       where: {
         companyId,
@@ -270,13 +284,21 @@ export class SharesService {
       );
     }
 
-    if (
-      share.expiresAt &&
-      share.expiresAt.getTime() <= Date.now()
-    ) {
-      throw new NotFoundException(
-        'Catálogo expirado.',
-      );
+    if (share.expiresAt && share.expiresAt <= new Date()) {
+      await this.prisma.share.updateMany({
+        where: {
+          id: share.id,
+          status: 'ACTIVE',
+          expiresAt: {
+            lte: new Date(),
+          },
+        },
+        data: {
+          status: 'EXPIRED',
+        },
+      });
+
+      throw new NotFoundException('Catálogo expirado.');
     }
 
     return {
@@ -317,13 +339,13 @@ export class SharesService {
         : null,
 
       client: share.client
-      ? {
+        ? {
           id: share.client.id,
           name: share.client.name,
           email: share.client.email,
           phone: share.client.phone,
         }
-      : null,
+        : null,
 
       itemCount: share.items.length,
 
