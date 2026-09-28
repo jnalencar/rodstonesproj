@@ -12,6 +12,16 @@ type AppShellProps = {
   children: ReactNode
 }
 
+export function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <span className="footer-signature">RODSTONES</span>
+      <span>Gestão de rochas naturais</span>
+      <span>© {new Date().getFullYear()}</span>
+    </footer>
+  )
+}
+
 export function AppShell({
   profile,
   company,
@@ -77,11 +87,7 @@ export function AppShell({
 
       <div className="app-content">{children}</div>
 
-      <footer className="app-footer">
-        <span className="footer-signature">RODSTONES</span>
-        <span>Gestão de rochas naturais</span>
-        <span>© {new Date().getFullYear()}</span>
-      </footer>
+      <AppFooter />
     </div>
   )
 }

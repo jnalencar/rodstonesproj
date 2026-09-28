@@ -64,7 +64,7 @@
 
 .kanban-scroll {
   flex: 1;
-  min-height: 460px;
+  min-height: 0;
   overflow-x: auto;
   scrollbar-color: #b8c0b7 transparent;
   scrollbar-width: thin;
@@ -82,7 +82,8 @@
 .kanban-column {
   display: flex;
   height: 100%;
-  min-height: 460px;
+  min-height: 0;
+  min-width: 0;
   flex-direction: column;
   padding: 13px;
   border: 1px solid #e0e3dc;
@@ -92,6 +93,7 @@
 
 .column-heading {
   display: flex;
+  flex: 0 0 auto;
   min-height: 52px;
   align-items: flex-start;
   justify-content: space-between;
@@ -132,17 +134,40 @@
 .column-cards {
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
   gap: 10px;
+  overflow-y: auto;
   padding-top: 12px;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.column-cards::-webkit-scrollbar {
+  display: none;
 }
 
 .offer-card {
+  display: block;
   padding: 13px;
   border: 1px solid #e3e5df;
   border-radius: 3px;
   background: #fffefa;
   box-shadow: 0 2px 5px rgb(38 49 43 / 4%);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 130ms ease, box-shadow 130ms ease, transform 130ms ease;
+}
+
+.offer-card:hover {
+  border-color: #b7c2b5;
+  box-shadow: 0 5px 14px rgb(38 49 43 / 9%);
+  transform: translateY(-1px);
+}
+
+.offer-card:focus-visible {
+  outline: 2px solid #a05b43;
+  outline-offset: 2px;
 }
 
 .offer-card-topline,
@@ -191,6 +216,27 @@
 .offer-client strong {
   color: #515b53;
   font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.offer-seller {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.offer-seller > span {
+  color: #838a82;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.offer-seller strong {
+  color: #515b53;
+  font-size: 11px;
   font-weight: 700;
   overflow-wrap: anywhere;
 }

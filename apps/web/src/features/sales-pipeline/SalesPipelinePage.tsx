@@ -55,7 +55,7 @@ function formatDate(value: string) {
 
 function OfferCard({ share }: { share: ShareOffer }) {
   return (
-    <article className="offer-card">
+    <a className="offer-card" href={`/share/${encodeURIComponent(share.token)}`}>
       <div className="offer-card-topline">
         <span className={`offer-status ${share.status === 'ACTIVE' ? 'is-active' : ''}`}>
           {share.status === 'ACTIVE' ? 'Ativa' : 'Inativa'}
@@ -66,6 +66,10 @@ function OfferCard({ share }: { share: ShareOffer }) {
       <div className="offer-client">
         <span>CLIENTE</span>
         <strong>{share.client?.name || 'Não informado'}</strong>
+      </div>
+      <div className="offer-seller">
+        <span>VENDEDOR</span>
+        <strong>{share.createdBy?.name || 'Vendedor não informado'}</strong>
       </div>
       <div className="offer-bundles">
         <div className="offer-bundles-heading">
@@ -86,7 +90,7 @@ function OfferCard({ share }: { share: ShareOffer }) {
       {share.expiresAt && (
         <p className="offer-expiration">Expira em {formatDate(share.expiresAt)}</p>
       )}
-    </article>
+    </a>
   )
 }
 

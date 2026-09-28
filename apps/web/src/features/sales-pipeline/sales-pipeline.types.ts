@@ -4,6 +4,8 @@ export type ShareOffer = {
   status: string
   createdAt: string
   expiresAt: string | null
+  token: string
+  createdBy?: { id: number; name: string; email: string } | null
   client: { id: number; name: string } | null
   itemCount: number
   items: Array<{

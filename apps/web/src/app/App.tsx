@@ -5,10 +5,21 @@ import type { AppSection } from './app.types'
 import { AuthScreen } from '../features/auth/AuthScreen'
 import { BundlesPage } from '../features/bundles/BundlesPage'
 import { ClientsPage } from '../features/clients/ClientsPage'
+import { PublicSharePage } from '../features/shares/PublicSharePage'
 import { useAuth } from '../features/auth/useAuth'
 import { SalesPipelinePage } from '../features/sales-pipeline/SalesPipelinePage'
 
 export default function App() {
+  const publicShareToken = window.location.pathname.match(/^\/share\/([^/]+)\/?$/)?.[1]
+
+  if (publicShareToken) {
+    return <PublicSharePage token={decodeURIComponent(publicShareToken)} />
+  }
+
+  return <AuthenticatedApp />
+}
+
+function AuthenticatedApp() {
   const auth = useAuth()
   const [activeSection, setActiveSection] = useState<AppSection>('home')
 

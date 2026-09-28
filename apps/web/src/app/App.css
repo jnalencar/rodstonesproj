@@ -44,7 +44,9 @@
 .app-shell {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  min-height: 100svh;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
   color: #26312b;
   background: #f3f4ef;
 }
