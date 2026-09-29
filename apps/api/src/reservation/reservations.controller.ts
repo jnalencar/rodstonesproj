@@ -59,4 +59,22 @@ export class ReservationsController {
   ) {
     return this.reservationsService.reject(id, user);
   }
+
+  @Patch(':id/cancel')
+  @Permissions('reservation:cancel')
+  cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reservationsService.cancel(id, user);
+  }
+
+  @Patch(':id/release')
+  @Permissions('reservation:release')
+  release(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reservationsService.release(id, user);
+  }
 }

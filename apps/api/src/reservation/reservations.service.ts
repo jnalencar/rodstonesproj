@@ -663,4 +663,385 @@ export class ReservationsService {
             });
         });
     }
+
+    async cancel(
+        id: number,
+        user: AuthenticatedUser,
+    ) {
+        const companyId = user.companyId;
+
+        if (!companyId) {
+            throw new ForbiddenException(
+                'Usuário não possui uma empresa associada.',
+            );
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Bloqueia a solicitação da empresa.
+            const locked = await tx.$queryRaw<{ id: number }[]>`
+      SELECT "id"
+      FROM "ReservationRequest"
+      WHERE "id" = ${id}
+        AND "companyId" = ${companyId}
+      FOR UPDATE
+    `;
+
+            if (locked.length === 0) {
+                throw new NotFoundException(
+                    'Solicitação de reserva não encontrada.',
+                );
+            }
+
+            // 2. Busca a solicitação.
+            const reservation =
+                await tx.reservationRequest.findFirst({
+                    where: {
+                        id,
+                        companyId,
+                    },
+                    include: {
+                        items: {
+                            select: {
+                                slabId: true,
+                                slab: {
+                                    select: {
+                                        id: true,
+                                        number: true,
+                                        status: true,
+                                        deletedAt: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+
+            if (!reservation) {
+                throw new NotFoundException(
+                    'Solicitação de reserva não encontrada.',
+                );
+            }
+
+            // 3. Cancelamento somente de solicitações pendentes.
+            if (reservation.status !== 'PENDING') {
+                throw new ConflictException(
+                    'Somente solicitações pendentes podem ser canceladas. Para reservas aprovadas, utilize a liberação.',
+                );
+            }
+
+            if (reservation.items.length === 0) {
+                throw new ConflictException(
+                    'A solicitação não possui chapas.',
+                );
+            }
+
+            const slabIds = reservation.items.map(
+                (item) => item.slabId,
+            );
+
+            // 4. Bloqueia as chapas em ordem crescente de ID.
+            const lockedSlabs = await tx.$queryRaw<
+                { id: number }[]
+            >`
+      SELECT "id"
+      FROM "Slab"
+      WHERE "id" IN (${Prisma.join(slabIds)})
+      ORDER BY "id"
+      FOR UPDATE
+    `;
+
+            if (lockedSlabs.length !== slabIds.length) {
+                throw new ConflictException(
+                    'Uma ou mais chapas não foram encontradas.',
+                );
+            }
+
+            // 5. Verifica se existem outras solicitações ativas
+            // vinculadas às mesmas chapas.
+            const otherActiveItems =
+                await tx.reservationRequestItem.findMany({
+                    where: {
+                        slabId: {
+                            in: slabIds,
+                        },
+                        reservationRequestId: {
+                            not: reservation.id,
+                        },
+                        reservationRequest: {
+                            status: {
+                                in: ['PENDING', 'APPROVED'],
+                            },
+                        },
+                    },
+                    select: {
+                        slabId: true,
+                    },
+                });
+
+            const slabsWithOtherReservations = new Set(
+                otherActiveItems.map((item) => item.slabId),
+            );
+
+            const slabsToRelease = reservation.items
+                .filter(
+                    (item) =>
+                        item.slab.status === 'RESERVED' &&
+                        item.slab.deletedAt === null &&
+                        !slabsWithOtherReservations.has(item.slabId),
+                )
+                .map((item) => item.slabId);
+
+            // 6. Atualiza a solicitação.
+            await tx.reservationRequest.update({
+                where: {
+                    id: reservation.id,
+                },
+                data: {
+                    status: 'CANCELLED',
+                },
+            });
+
+            // 7. Libera somente as chapas elegíveis.
+            if (slabsToRelease.length > 0) {
+                await tx.slab.updateMany({
+                    where: {
+                        id: {
+                            in: slabsToRelease,
+                        },
+                        status: 'RESERVED',
+                        deletedAt: null,
+                    },
+                    data: {
+                        status: 'AVAILABLE',
+                    },
+                });
+            }
+
+            // 8. Retorna a solicitação atualizada.
+            return tx.reservationRequest.findUnique({
+                where: {
+                    id: reservation.id,
+                },
+                include: {
+                    share: {
+                        select: {
+                            id: true,
+                            title: true,
+                            client: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    phone: true,
+                                },
+                            },
+                        },
+                    },
+                    items: {
+                        include: {
+                            slab: {
+                                select: {
+                                    id: true,
+                                    number: true,
+                                    status: true,
+                                    bundleId: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    }
+
+    async release(
+        id: number,
+        user: AuthenticatedUser,
+    ) {
+        const companyId = user.companyId;
+
+        if (!companyId) {
+            throw new ForbiddenException(
+                'Usuário não possui uma empresa associada.',
+            );
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Bloqueia a solicitação da empresa.
+            const locked = await tx.$queryRaw<{ id: number }[]>`
+      SELECT "id"
+      FROM "ReservationRequest"
+      WHERE "id" = ${id}
+        AND "companyId" = ${companyId}
+      FOR UPDATE
+    `;
+
+            if (locked.length === 0) {
+                throw new NotFoundException(
+                    'Reserva não encontrada.',
+                );
+            }
+
+            // 2. Busca a reserva aprovada.
+            const reservation =
+                await tx.reservationRequest.findFirst({
+                    where: {
+                        id,
+                        companyId,
+                    },
+                    include: {
+                        items: {
+                            select: {
+                                slabId: true,
+                                slab: {
+                                    select: {
+                                        id: true,
+                                        number: true,
+                                        status: true,
+                                        deletedAt: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+
+            if (!reservation) {
+                throw new NotFoundException(
+                    'Reserva não encontrada.',
+                );
+            }
+
+            // 3. Só reservas aprovadas podem ser liberadas.
+            if (reservation.status !== 'APPROVED') {
+                throw new ConflictException(
+                    'Somente reservas aprovadas podem ser liberadas.',
+                );
+            }
+
+            if (reservation.items.length === 0) {
+                throw new ConflictException(
+                    'A reserva não possui chapas.',
+                );
+            }
+
+            const slabIds = reservation.items.map(
+                (item) => item.slabId,
+            );
+
+            // 4. Bloqueia as chapas em ordem crescente.
+            const lockedSlabs = await tx.$queryRaw<
+                { id: number }[]
+            >`
+      SELECT "id"
+      FROM "Slab"
+      WHERE "id" IN (${Prisma.join(slabIds)})
+      ORDER BY "id"
+      FOR UPDATE
+    `;
+
+            if (lockedSlabs.length !== slabIds.length) {
+                throw new ConflictException(
+                    'Uma ou mais chapas não foram encontradas.',
+                );
+            }
+
+            // 5. Verifica se outras solicitações ativas
+            // também estão vinculadas às chapas.
+            const otherActiveItems =
+                await tx.reservationRequestItem.findMany({
+                    where: {
+                        slabId: {
+                            in: slabIds,
+                        },
+                        reservationRequestId: {
+                            not: reservation.id,
+                        },
+                        reservationRequest: {
+                            status: {
+                                in: ['PENDING', 'APPROVED'],
+                            },
+                        },
+                    },
+                    select: {
+                        slabId: true,
+                    },
+                });
+
+            const slabsWithOtherReservations = new Set(
+                otherActiveItems.map((item) => item.slabId),
+            );
+
+            const slabsToRelease = reservation.items
+                .filter(
+                    (item) =>
+                        item.slab.status === 'RESERVED' &&
+                        item.slab.deletedAt === null &&
+                        !slabsWithOtherReservations.has(item.slabId),
+                )
+                .map((item) => item.slabId);
+
+            // 6. Atualiza a reserva para CANCELLED.
+            await tx.reservationRequest.update({
+                where: {
+                    id: reservation.id,
+                },
+                data: {
+                    status: 'CANCELLED',
+                },
+            });
+
+            // 7. Libera as chapas que ainda pertencem
+            // exclusivamente a esta reserva ativa.
+            if (slabsToRelease.length > 0) {
+                await tx.slab.updateMany({
+                    where: {
+                        id: {
+                            in: slabsToRelease,
+                        },
+                        status: 'RESERVED',
+                        deletedAt: null,
+                    },
+                    data: {
+                        status: 'AVAILABLE',
+                    },
+                });
+            }
+
+            // 8. Retorna a reserva atualizada.
+            return tx.reservationRequest.findUnique({
+                where: {
+                    id: reservation.id,
+                },
+                include: {
+                    share: {
+                        select: {
+                            id: true,
+                            title: true,
+                            client: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    phone: true,
+                                },
+                            },
+                        },
+                    },
+                    items: {
+                        include: {
+                            slab: {
+                                select: {
+                                    id: true,
+                                    number: true,
+                                    status: true,
+                                    bundleId: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    }
 }

@@ -508,6 +508,8 @@ model ReservationRequest {
 
   items ReservationRequestItem[]
 
+  accessTokenHash        String?  @unique
+
   @@index([companyId])
   @@index([shareId])
   @@index([status])
