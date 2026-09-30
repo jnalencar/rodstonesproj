@@ -96,6 +96,16 @@ const permissions: { code: string; description: string }[] = [
   { code: 'client:update', description: 'Atualizar clientes' },
   { code: 'client:delete', description: 'Excluir clientes' },
 
+  { code: 'negotiation:read', description: 'Visualizar negociações' },
+  { code: 'negotiation:create', description: 'Criar negociações' },
+  { code: 'negotiation:update', description: 'Atualizar negociações' },
+  { code: 'negotiation:close', description: 'Fechar negociações' },
+
+  { code: 'negotiation:file:read', description: 'Visualizar arquivos de negociações' },
+  { code: 'negotiation:file:create', description: 'Criar arquivos de negociações' },
+  { code: 'negotiation:file:update', description: 'Atualizar arquivos de negociações' },
+  { code: 'negotiation:file:delete', description: 'Excluir arquivos de negociações' },
+
 ];
 
 const roles: { code: string; description: string; isSystem: boolean }[] = [
@@ -190,6 +200,15 @@ const rolePermissions = {
     'client:create',
     'client:update',
     'client:delete',
+
+    'negotiation:read',
+    'negotiation:create',
+    'negotiation:update',
+    'negotiation:close',
+    'negotiation:file:read',
+    'negotiation:file:create',
+    'negotiation:file:update',
+    'negotiation:file:delete',
   ],
 
   COMPANY_ADMIN: [
@@ -266,6 +285,15 @@ const rolePermissions = {
     'client:create',
     'client:update',
     'client:delete',
+
+    'negotiation:read',
+    'negotiation:create',
+    'negotiation:update',
+    'negotiation:close',
+    'negotiation:file:read',
+    'negotiation:file:create',
+    'negotiation:file:update',
+    'negotiation:file:delete',
   ],
 
   MANAGER: [
@@ -318,6 +346,15 @@ const rolePermissions = {
     'client:create',
     'client:update',
     'client:delete',
+
+    'negotiation:read',
+    'negotiation:create',
+    'negotiation:update',
+    'negotiation:close',
+    'negotiation:file:read',
+    'negotiation:file:create',
+    'negotiation:file:update',
+    'negotiation:file:delete',
   ],
 
   SELLER: [
@@ -350,6 +387,15 @@ const rolePermissions = {
     'client:create',
     'client:update',
     'client:delete',
+
+    'negotiation:read',
+    'negotiation:create',
+    'negotiation:update',
+    'negotiation:close',
+    'negotiation:file:read',
+    'negotiation:file:create',
+    'negotiation:file:update',
+    'negotiation:file:delete',
   ],
 
   PARTNER_ADMIN: [
@@ -402,6 +448,15 @@ const rolePermissions = {
     'client:create',
     'client:update',
     'client:delete',
+
+    'negotiation:read',
+    'negotiation:create',
+    'negotiation:update',
+    'negotiation:close',
+    'negotiation:file:read',
+    'negotiation:file:create',
+    'negotiation:file:update',
+    'negotiation:file:delete',
   ],
 
   PARTNER_SELLER: [
@@ -433,6 +488,15 @@ const rolePermissions = {
     'client:create',
     'client:update',
     'client:delete',
+
+    'negotiation:read',
+    'negotiation:create',
+    'negotiation:update',
+    'negotiation:close',
+    'negotiation:file:read',
+    'negotiation:file:create',
+    'negotiation:file:update',
+    'negotiation:file:delete',
   ],
 };
 

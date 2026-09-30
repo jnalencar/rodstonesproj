@@ -21,6 +21,7 @@ import { SharesModule } from './shares/shares.module';
 import { ReservationsModule } from './reservation/reservations.module';
 import { ClientsModule } from './clients/clients.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NegotiationsModule } from './negotiations/negotiations.module';
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { ScheduleModule } from '@nestjs/schedule';
             BundlesModule, 
             SharesModule, 
             ReservationsModule, 
-            ClientsModule],
+            ClientsModule,
+            NegotiationsModule,],
   controllers: [AppController],
   providers: [
     AppService,

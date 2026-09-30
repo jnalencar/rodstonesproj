@@ -81,6 +81,11 @@ enum ClientStatus {
   INACTIVE
 }
 
+enum NegotiationStatus {
+  IN_NEGOTIATION
+  AWAITING_BOOKING
+}
+
 model Company {
   id        Int           @id @default(autoincrement())
   name      String
@@ -108,7 +113,7 @@ model Company {
   partner  Partner?
 
   reservationRequest ReservationRequest[]
-  shares Share[]
+  shares             Share[]
 
   clients Client[]
 
@@ -131,7 +136,7 @@ model User {
   memberships   CompanyMembership[]
   refreshTokens RefreshToken[]
 
-  createdShares             Share[]                 /// @relation("ShareCreatedBy")
+  createdShares Share[] /// @relation("ShareCreatedBy")
   /// assignedReservationRequests ReservationRequest[]  ///@relation("ReservationAssignedTo")
   /// approvedReservations      Reservation[]           ///@relation("ReservationApprovedBy")
   /// reservationStatusHistory  ReservationStatusHistory[]
@@ -338,7 +343,7 @@ model Bundle {
   finish                 Finish                 @relation(fields: [finishId], references: [id], onDelete: Restrict)
 
   images BundleImage[]
-  slabs Slab[]
+  slabs  Slab[]
 
   shareItems ShareItem[]
 
@@ -391,7 +396,7 @@ model Slab {
 
   bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
 
-  images SlabImage[]
+  images                  SlabImage[]
   reservationRequestItems ReservationRequestItem[]
 
   @@unique([bundleId, number])
@@ -496,7 +501,7 @@ model ReservationRequest {
   companyId Int
   shareId   Int
 
-  message       String?
+  message String?
 
   status ReservationRequestStatus @default(PENDING)
 
@@ -508,7 +513,8 @@ model ReservationRequest {
 
   items ReservationRequestItem[]
 
-  accessTokenHash        String?  @unique
+  accessTokenHash String?      @unique
+  negotiation     Negotiation?
 
   @@index([companyId])
   @@index([shareId])
@@ -534,9 +540,9 @@ model ReservationRequestItem {
 model Share {
   id Int @id @default(autoincrement())
 
-  companyId Int
+  companyId   Int
   createdById Int
-  clientId Int
+  clientId    Int
 
   token String @unique
 
@@ -546,15 +552,15 @@ model Share {
 
   status ShareStatus @default(ACTIVE)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy User    @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  client    Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
-  items ShareItem[]
+  items               ShareItem[]
   reservationRequests ReservationRequest[]
 
   @@index([companyId])
@@ -568,7 +574,7 @@ model Share {
 model ShareItem {
   id Int @id @default(autoincrement())
 
-  shareId Int
+  shareId  Int
   bundleId Int
 
   createdAt DateTime @default(now())
@@ -593,10 +599,10 @@ model Client {
   document String?
   notes    String?
 
-  status    ClientStatus @default(ACTIVE)
+  status ClientStatus @default(ACTIVE)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
@@ -606,4 +612,48 @@ model Client {
   @@index([companyId])
   @@index([name])
   @@index([deletedAt])
+}
+
+model Negotiation {
+  id                   Int @id @default(autoincrement())
+  reservationRequestId Int @unique
+
+  status NegotiationStatus @default(IN_NEGOTIATION)
+
+  paymentTerms        String?
+  portOfLoading       String?
+  portOfDestination   String?
+  shippingMethod      String?
+  incoterm            String?
+  negotiationClosedAt DateTime?
+  containerType       String?
+  deliveryTime        String?
+  truckingFee         Decimal?
+  oceanFreight        Decimal?
+  invoice             String?
+  packingInfo         String?
+  remarks             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservationRequest ReservationRequest @relation(fields: [reservationRequestId], references: [id], onDelete: Restrict)
+
+  files NegotiationFile[]
+}
+
+model NegotiationFile {
+  id            Int @id @default(autoincrement())
+  negotiationId Int
+
+  fileName    String
+  storageKey  String
+  contentType String?
+  size        Int?
+
+  createdAt DateTime @default(now())
+
+  negotiation Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+
+  @@index([negotiationId])
 }

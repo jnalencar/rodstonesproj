@@ -124,7 +124,6 @@ export class ReservationsService {
                         shareId: share.id,
                         message: dto.message?.trim() || null,
                         status: 'PENDING',
-
                         items: {
                             create: dto.slabIds.map((slabId) => ({
                                 slabId,
@@ -182,6 +181,7 @@ export class ReservationsService {
             await this.prisma.reservationRequest.findMany({
                 where: {
                     companyId,
+                    negotiation: null,
                 },
 
                 orderBy: {
@@ -419,6 +419,12 @@ export class ReservationsService {
                     status: 'APPROVED',
                 },
             });
+            await tx.negotiation.create({
+                data: {
+                    reservationRequestId: reservation.id,
+                    status: 'IN_NEGOTIATION',
+                },
+            });
 
             // 6. Retorna os dados atualizados.
             return tx.reservationRequest.findUnique({
@@ -452,6 +458,7 @@ export class ReservationsService {
                             },
                         },
                     },
+                    negotiation: true,
                 },
             });
         });
