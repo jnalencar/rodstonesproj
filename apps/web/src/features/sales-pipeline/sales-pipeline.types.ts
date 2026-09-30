@@ -15,7 +15,7 @@ export type ShareOffer = {
 }
 
 export type BoardColumn = {
-  key: 'offers' | 'reservations' | 'negotiation' | 'payment' | 'logistics' | 'invoices'
+  key: 'offers' | 'reservations' | 'negotiation' | 'waiting_booking' | 'already_booked' | 'completed'
   title: string
   description: string
   emptyMessage: string

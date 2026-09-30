@@ -97,3 +97,17 @@ export function createReservationRequest(
     },
   )
 }
+
+export function approveReservation(token: string, reservationId: number) {
+  return requestJson<ReservationSummary>(`/reservations/${reservationId}/approve`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function rejectReservation(token: string, reservationId: number) {
+  return requestJson<ReservationSummary>(`/reservations/${reservationId}/reject`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}

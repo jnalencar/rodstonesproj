@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { DragEvent } from 'react'
 import { getShares } from './sales-pipeline.api'
-import { createReservationRequest, getReservation, getReservations } from './reservations.api'
+import { approveReservation, createReservationRequest, getReservation, getReservations, rejectReservation } from './reservations.api'
 import type { ReservationDetails, ReservationStatus, ReservationSummary } from './reservations.api'
 import type { BoardColumn, ShareOffer } from './sales-pipeline.types'
+import { getNegotiation, getNegotiations, updateNegotiation, uploadNegotiationFile } from './negotiations.api'
+import type { NegotiationFields, NegotiationSummary } from './negotiations.api'
 import { getPublicShare } from '../shares/shares.api'
 import type { PublicShare } from '../shares/shares.api'
 import './SalesPipelinePage.css'
@@ -23,27 +25,27 @@ const BOARD_COLUMNS: BoardColumn[] = [
   },
   {
     key: 'negotiation',
-    title: 'Negociação',
+    title: 'Em Negociação',
+    description: 'Reservas aprovadas em negociação',
+    emptyMessage: 'As negociações aparecerão aqui.',
+  },
+  {
+    key: 'waiting_booking',
+    title: 'Aguardando Booking',
+    description: 'Negociações aguardando booking',
+    emptyMessage: 'Nenhuma negociação aguardando booking.',
+  },
+  {
+    key: 'already_booked',
+    title: 'Já Reservado',
     description: 'Etapa sugerida',
     emptyMessage: 'Espaço reservado para esta etapa.',
   },
   {
-    key: 'payment',
-    title: 'Pagamento',
-    description: 'Etapa sugerida',
-    emptyMessage: 'Espaço reservado para esta etapa.',
-  },
-  {
-    key: 'logistics',
-    title: 'Logística',
-    description: 'Etapa sugerida',
-    emptyMessage: 'Espaço reservado para esta etapa.',
-  },
-  {
-    key: 'invoices',
-    title: 'Invoices',
+    key: 'completed',
+    title: 'Concluídas',
     description: 'Vendas concluídas',
-    emptyMessage: 'Os invoices das vendas concluídas aparecerão aqui.',
+    emptyMessage: 'As vendas concluídas aparecerão aqui.',
   },
 ]
 
@@ -353,9 +355,13 @@ function ReservationFromShareDialog({
 function ReservationCard({
   reservation,
   onOpen,
+  onDragStart,
+  onDragEnd,
 }: {
   reservation: ReservationSummary
   onOpen: (reservationId: number) => void
+  onDragStart: (reservationId: number) => void
+  onDragEnd: () => void
 }) {
   const bundleCodes = [...new Set(reservation.items.map(({ slab }) => slab.bundle.bundleCode))]
 
@@ -363,7 +369,14 @@ function ReservationCard({
     <button
       className="reservation-card"
       type="button"
+      draggable={reservation.status === 'PENDING'}
       onClick={() => onOpen(reservation.id)}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', String(reservation.id))
+        onDragStart(reservation.id)
+      }}
+      onDragEnd={onDragEnd}
       aria-label={`Ver reserva ${reservation.id} de ${reservation.share.client.name}`}
     >
       <div className="reservation-card-topline">
@@ -392,10 +405,16 @@ function ReservationCard({
 function ReservationDetailsDialog({
   reservation,
   onClose,
+  onApprove,
+  onReject,
 }: {
   reservation: ReservationDetails
   onClose: () => void
+  onApprove: (reservationId: number) => Promise<void>
+  onReject: (reservationId: number) => Promise<void>
 }) {
+  const [pendingAction, setPendingAction] = useState<'approve' | 'reject' | null>(null)
+  const [actionError, setActionError] = useState('')
   const itemsByBundle = reservation.items.reduce((groups, item) => {
     const bundleId = item.slab.bundle.id
     const existing = groups.get(bundleId) ?? []
@@ -404,9 +423,24 @@ function ReservationDetailsDialog({
     return groups
   }, new Map<number, ReservationDetails['items']>())
 
+  async function decide(action: 'approve' | 'reject') {
+    setPendingAction(action)
+    setActionError('')
+    try {
+      await (action === 'approve' ? onApprove : onReject)(reservation.id)
+      onClose()
+    } catch (requestError) {
+      setActionError(requestError instanceof Error
+        ? requestError.message
+        : `Não foi possível ${action === 'approve' ? 'aprovar' : 'rejeitar'} a reserva.`)
+    } finally {
+      setPendingAction(null)
+    }
+  }
+
   return (
     <div className="reservation-dialog-backdrop" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose()
+      if (event.target === event.currentTarget && pendingAction === null) onClose()
     }}>
       <section
         className="reservation-dialog"
@@ -414,7 +448,7 @@ function ReservationDetailsDialog({
         aria-modal="true"
         aria-labelledby="reservation-detail-title"
       >
-        <button className="reservation-dialog-close" type="button" onClick={onClose} aria-label="Fechar detalhes da reserva">
+        <button className="reservation-dialog-close" type="button" onClick={onClose} aria-label="Fechar detalhes da reserva" disabled={pendingAction !== null}>
           ×
         </button>
         <div className="reservation-detail-heading">
@@ -488,6 +522,250 @@ function ReservationDetailsDialog({
             )
           })}
         </section>
+        {reservation.status === 'PENDING' && (
+          <footer className="reservation-decision-actions">
+            {actionError && <p className="column-error" role="alert">{actionError}</p>}
+            <div>
+              <button
+                className="reservation-reject-button"
+                type="button"
+                onClick={() => void decide('reject')}
+                disabled={pendingAction !== null}
+              >
+                {pendingAction === 'reject' ? 'Rejeitando...' : 'Rejeitar reserva'}
+              </button>
+              <button
+                className="reservation-submit-button"
+                type="button"
+                onClick={() => void decide('approve')}
+                disabled={pendingAction !== null}
+              >
+                {pendingAction === 'approve' ? 'Aprovando...' : 'Aprovar reserva'}
+              </button>
+            </div>
+          </footer>
+        )}
+      </section>
+    </div>
+  )
+}
+
+function NegotiationCard({
+  negotiation,
+  onOpen,
+}: {
+  negotiation: NegotiationSummary
+  onOpen: (negotiationId: number) => void
+}) {
+  const client = negotiation.reservationRequest.share.client
+  const bundleCodes = [...new Set(negotiation.reservationRequest.items.map(({ slab }) => slab.bundle.bundleCode))]
+
+  return (
+    <button
+      className="negotiation-card"
+      type="button"
+      onClick={() => onOpen(negotiation.id)}
+      aria-label={`Abrir negociação ${negotiation.id} de ${client.name}`}
+    >
+      <div className="negotiation-card-topline">
+        <span>Negociação #{negotiation.id}</span>
+      </div>
+      <h3>{client.name}</h3>
+      <div className="reservation-card-person">
+        <span>RESERVA</span>
+        <strong>#{negotiation.reservationRequestId}</strong>
+      </div>
+      <div className="reservation-card-items">
+        <span>{negotiation.reservationRequest.items.length} {negotiation.reservationRequest.items.length === 1 ? 'chapa' : 'chapas'}</span>
+        <p>{bundleCodes.join(' · ') || 'Sem bundles'}</p>
+      </div>
+      {negotiation.files && negotiation.files.length > 0 && (
+        <span className="negotiation-file-count">{negotiation.files.length} anexo(s)</span>
+      )}
+    </button>
+  )
+}
+
+type NegotiationForm = Omit<NegotiationFields, 'truckingFee' | 'oceanFreight'> & {
+  truckingFee: string
+  oceanFreight: string
+}
+
+function NegotiationDetailsDialog({
+  negotiation,
+  onClose,
+  onSave,
+}: {
+  negotiation: NegotiationSummary
+  onClose: () => void
+  onSave: (fields: NegotiationFields, comment: string, files: File[]) => Promise<void>
+}) {
+  const [form, setForm] = useState<NegotiationForm>(() => ({
+    paymentTerms: negotiation.paymentTerms ?? '',
+    portOfLoading: negotiation.portOfLoading ?? '',
+    portOfDestination: negotiation.portOfDestination ?? '',
+    shippingMethod: negotiation.shippingMethod ?? '',
+    incoterm: negotiation.incoterm ?? '',
+    containerType: negotiation.containerType ?? '',
+    deliveryTime: negotiation.deliveryTime ?? '',
+    truckingFee: negotiation.truckingFee?.toString() ?? '',
+    oceanFreight: negotiation.oceanFreight?.toString() ?? '',
+    invoice: negotiation.invoice ?? '',
+    packingInfo: negotiation.packingInfo ?? '',
+    remarks: negotiation.remarks ?? '',
+  }))
+  const [comment, setComment] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const isEditable = negotiation.status === 'IN_NEGOTIATION'
+
+  useEffect(() => {
+    setForm({
+      paymentTerms: negotiation.paymentTerms ?? '',
+      portOfLoading: negotiation.portOfLoading ?? '',
+      portOfDestination: negotiation.portOfDestination ?? '',
+      shippingMethod: negotiation.shippingMethod ?? '',
+      incoterm: negotiation.incoterm ?? '',
+      containerType: negotiation.containerType ?? '',
+      deliveryTime: negotiation.deliveryTime ?? '',
+      truckingFee: negotiation.truckingFee?.toString() ?? '',
+      oceanFreight: negotiation.oceanFreight?.toString() ?? '',
+      invoice: negotiation.invoice ?? '',
+      packingInfo: negotiation.packingInfo ?? '',
+      remarks: negotiation.remarks ?? '',
+    })
+  }, [negotiation])
+  const requiredFields = [
+    form.paymentTerms,
+    form.portOfLoading,
+    form.portOfDestination,
+    form.shippingMethod,
+    form.incoterm,
+    form.containerType,
+    form.deliveryTime,
+    form.truckingFee,
+    form.oceanFreight,
+  ]
+  const completedFields = requiredFields.filter((value) => value.trim() !== '').length
+
+  function updateField(field: keyof NegotiationForm, value: string) {
+    setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  async function submit() {
+    setError('')
+    setIsSubmitting(true)
+    try {
+      const truckingFee = form.truckingFee.trim() ? Number(form.truckingFee.replace(',', '.')) : null
+      const oceanFreight = form.oceanFreight.trim() ? Number(form.oceanFreight.replace(',', '.')) : null
+      if ((truckingFee !== null && !Number.isFinite(truckingFee)) || (oceanFreight !== null && !Number.isFinite(oceanFreight))) {
+        setError('Informe valores numéricos válidos para os fretes.')
+        return
+      }
+      await onSave({
+        ...form,
+        truckingFee,
+        oceanFreight,
+      }, comment, files)
+      setFiles([])
+      setComment('')
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Não foi possível salvar as alterações.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const textField = (field: keyof NegotiationForm, label: string, required = false) => (
+    <label className="negotiation-field" key={field}>
+      <span>{label}{required && <small>Obrigatório</small>}</span>
+      <input
+        type={field === 'truckingFee' || field === 'oceanFreight' ? 'number' : 'text'}
+        step={field === 'truckingFee' || field === 'oceanFreight' ? '0.01' : undefined}
+        value={form[field]}
+        onChange={(event) => updateField(field, event.target.value)}
+        disabled={!isEditable || isSubmitting}
+      />
+    </label>
+  )
+
+  return (
+    <div className="reservation-dialog-backdrop" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !isSubmitting) onClose()
+    }}>
+      <section className="reservation-dialog negotiation-dialog" role="dialog" aria-modal="true" aria-labelledby="negotiation-title">
+        <button className="reservation-dialog-close" type="button" onClick={onClose} aria-label="Fechar negociação" disabled={isSubmitting}>×</button>
+        <header className="reservation-detail-heading">
+          <div>
+            <p className="eyebrow">RESERVA #{negotiation.reservationRequestId}</p>
+            <h2 id="negotiation-title">{negotiation.reservationRequest.share.client.name}</h2>
+          </div>
+        </header>
+
+        <section className="negotiation-form-section">
+          <div className="negotiation-section-heading">
+            <div>
+              <h3>Condições comerciais</h3>
+              <p>{completedFields}/9 campos preenchidos para avançar para booking</p>
+            </div>
+          </div>
+          <div className="negotiation-field-grid">
+            {textField('paymentTerms', 'Condições de pagamento', true)}
+            {textField('portOfLoading', 'Porto de embarque', true)}
+            {textField('portOfDestination', 'Porto de destino', true)}
+            {textField('shippingMethod', 'Modal de envio', true)}
+            {textField('incoterm', 'Incoterm', true)}
+            {textField('containerType', 'Tipo de container', true)}
+            {textField('deliveryTime', 'Prazo de entrega', true)}
+            {textField('truckingFee', 'Frete terrestre', true)}
+            {textField('oceanFreight', 'Frete marítimo', true)}
+            {textField('invoice', 'Fatura')}
+            {textField('packingInfo', 'Informações de embalagem')}
+          </div>
+          <label className="negotiation-field negotiation-field-wide">
+            <span>Informações e observações</span>
+            <textarea rows={3} value={form.remarks} onChange={(event) => updateField('remarks', event.target.value)} disabled={!isEditable || isSubmitting} />
+          </label>
+        </section>
+
+        <section className="negotiation-form-section">
+          <h3>Arquivos</h3>
+          {negotiation.files && negotiation.files.length > 0 ? (
+            <ul className="negotiation-file-list">
+              {negotiation.files.map((file) => (
+                <li key={file.id}><a href={file.url} target="_blank" rel="noreferrer">{file.fileName}</a></li>
+              ))}
+            </ul>
+          ) : <p className="negotiation-muted">Nenhum arquivo anexado.</p>}
+          {isEditable && (
+            <label className="negotiation-file-picker">
+              <span>Anexar arquivos</span>
+              <input type="file" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []))} disabled={isSubmitting} />
+              {files.length > 0 && <small>{files.map((file) => file.name).join(', ')}</small>}
+            </label>
+          )}
+        </section>
+
+        {isEditable && (
+          <section className="negotiation-form-section">
+            <h3>Adicionar comentário</h3>
+            <label className="negotiation-field negotiation-field-wide">
+              <span>Novo comentário</span>
+              <textarea rows={3} value={comment} onChange={(event) => setComment(event.target.value)} disabled={isSubmitting} placeholder="Registre uma atualização da negociação" />
+            </label>
+          </section>
+        )}
+
+        {error && <p className="column-error" role="alert">{error}</p>}
+        {isEditable && (
+          <footer className="negotiation-dialog-footer">
+            <span>As alterações são salvas na negociação.</span>
+            <button className="reservation-submit-button" type="button" onClick={() => void submit()} disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </footer>
+        )}
       </section>
     </div>
   )
@@ -504,8 +782,18 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null)
   const [isLoadingReservationDetails, setIsLoadingReservationDetails] = useState(false)
   const [reservationDetailsError, setReservationDetailsError] = useState('')
+  const [negotiations, setNegotiations] = useState<NegotiationSummary[]>([])
+  const [areNegotiationsLoading, setAreNegotiationsLoading] = useState(false)
+  const [negotiationsError, setNegotiationsError] = useState('')
+  const [selectedNegotiationId, setSelectedNegotiationId] = useState<number | null>(null)
+  const [negotiationDetails, setNegotiationDetails] = useState<NegotiationSummary | null>(null)
+  const [isLoadingNegotiationDetails, setIsLoadingNegotiationDetails] = useState(false)
+  const [negotiationDetailsError, setNegotiationDetailsError] = useState('')
   const [draggedShare, setDraggedShare] = useState<ShareOffer | null>(null)
+  const [draggedReservationId, setDraggedReservationId] = useState<number | null>(null)
   const [isReservationsDropActive, setIsReservationsDropActive] = useState(false)
+  const [isNegotiationDropActive, setIsNegotiationDropActive] = useState(false)
+  const [approvingReservationId, setApprovingReservationId] = useState<number | null>(null)
   const [shareForReservation, setShareForReservation] = useState<ShareOffer | null>(null)
 
   useEffect(() => {
@@ -529,6 +817,34 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
       })
       .finally(() => {
         if (active) setIsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [companyId])
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token) return
+
+    let active = true
+    setAreNegotiationsLoading(true)
+    setNegotiationsError('')
+
+    void getNegotiations(token)
+      .then((result) => {
+        if (active) setNegotiations(Array.isArray(result) ? result : [])
+      })
+      .catch((requestError: unknown) => {
+        if (active) {
+          setNegotiationsError(requestError instanceof Error
+            ? requestError.message
+            : 'Não foi possível carregar as negociações.')
+        }
+      })
+      .finally(() => {
+        if (active) setAreNegotiationsLoading(false)
       })
 
     return () => {
@@ -602,6 +918,44 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
     }
   }, [companyId, selectedReservationId])
 
+  useEffect(() => {
+    if (selectedNegotiationId === null) {
+      setNegotiationDetails(null)
+      setNegotiationDetailsError('')
+      return
+    }
+
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token) {
+      setNegotiationDetailsError('Sua sessão expirou. Entre novamente para ver os detalhes.')
+      return
+    }
+
+    let active = true
+    setNegotiationDetails(null)
+    setNegotiationDetailsError('')
+    setIsLoadingNegotiationDetails(true)
+
+    void getNegotiation(token, selectedNegotiationId)
+      .then((details) => {
+        if (active) setNegotiationDetails(details)
+      })
+      .catch((requestError: unknown) => {
+        if (active) {
+          setNegotiationDetailsError(requestError instanceof Error
+            ? requestError.message
+            : 'Não foi possível carregar os detalhes da negociação.')
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingNegotiationDetails(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [companyId, selectedNegotiationId])
+
   function handleOfferDragStart(share: ShareOffer) {
     setDraggedShare(share)
   }
@@ -611,6 +965,15 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
     setIsReservationsDropActive(false)
   }
 
+  function handleReservationDragStart(reservationId: number) {
+    setDraggedReservationId(reservationId)
+  }
+
+  function handleReservationDragEnd() {
+    setDraggedReservationId(null)
+    setIsNegotiationDropActive(false)
+  }
+
   function handleReservationsDrop(event: DragEvent<HTMLElement>) {
     event.preventDefault()
     setIsReservationsDropActive(false)
@@ -618,6 +981,74 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
     const share = shares.find((offer) => offer.token === token) ?? draggedShare
     if (share) setShareForReservation(share)
     setDraggedShare(null)
+  }
+
+  async function handleNegotiationDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault()
+    setIsNegotiationDropActive(false)
+    const reservationId = Number(event.dataTransfer.getData('text/plain')) || draggedReservationId
+    setDraggedReservationId(null)
+    if (!reservationId || approvingReservationId !== null) return
+
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token) {
+      setNegotiationsError('Sua sessão expirou. Entre novamente para aprovar a reserva.')
+      return
+    }
+
+    setApprovingReservationId(reservationId)
+    setNegotiationsError('')
+    try {
+      await approveReservation(token, reservationId)
+      const updatedNegotiations = await getNegotiations(token)
+      const negotiationList = Array.isArray(updatedNegotiations) ? updatedNegotiations : []
+      setNegotiations(negotiationList)
+      const createdNegotiation = negotiationList.find((item) => item.reservationRequestId === reservationId)
+      if (!createdNegotiation) {
+        throw new Error('A reserva foi aprovada, mas a negociação não apareceu na listagem.')
+      }
+      setSelectedNegotiationId(createdNegotiation.id)
+      try {
+        const updatedReservations = await getReservations(token)
+        setReservations(Array.isArray(updatedReservations) ? updatedReservations : [])
+      } catch (requestError) {
+        setReservationsError(requestError instanceof Error
+          ? requestError.message
+          : 'A reserva foi aprovada, mas não foi possível atualizar a lista.')
+      }
+    } catch (requestError) {
+      setNegotiationsError(requestError instanceof Error
+        ? requestError.message
+        : 'Não foi possível aprovar a reserva e iniciar a negociação.')
+    } finally {
+      setApprovingReservationId(null)
+    }
+  }
+
+  async function saveNegotiation(fields: NegotiationFields, comment: string, files: File[]) {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token || selectedNegotiationId === null) {
+      throw new Error('Sua sessão expirou. Entre novamente para salvar.')
+    }
+
+    const trimmedComment = comment.trim()
+    const remarks = trimmedComment
+      ? [
+          fields.remarks.trim(),
+          `Comentário (${formatDateTime(new Date().toISOString())}): ${trimmedComment}`,
+        ].filter(Boolean).join('\n\n')
+      : fields.remarks.trim()
+
+    await updateNegotiation(token, selectedNegotiationId, { ...fields, remarks })
+    for (const file of files) {
+      await uploadNegotiationFile(token, selectedNegotiationId, file)
+    }
+    const [details, updatedNegotiations] = await Promise.all([
+      getNegotiation(token, selectedNegotiationId),
+      getNegotiations(token),
+    ])
+    setNegotiationDetails(details)
+    setNegotiations(Array.isArray(updatedNegotiations) ? updatedNegotiations : [])
   }
 
   async function refreshReservations() {
@@ -634,6 +1065,34 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
     }
   }
 
+  async function refreshNegotiations() {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token) return
+    try {
+      const result = await getNegotiations(token)
+      setNegotiations(Array.isArray(result) ? result : [])
+      setNegotiationsError('')
+    } catch (requestError) {
+      setNegotiationsError(requestError instanceof Error
+        ? requestError.message
+        : 'Não foi possível atualizar as negociações.')
+    }
+  }
+
+  async function handleReservationApproval(reservationId: number) {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token) throw new Error('Sua sessão expirou. Entre novamente para aprovar a reserva.')
+    await approveReservation(token, reservationId)
+    await Promise.all([refreshReservations(), refreshNegotiations()])
+  }
+
+  async function handleReservationRejection(reservationId: number) {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token) throw new Error('Sua sessão expirou. Entre novamente para rejeitar a reserva.')
+    await rejectReservation(token, reservationId)
+    await refreshReservations()
+  }
+
   return (
     <>
       <main className="board-main" id="sales-pipeline">
@@ -642,28 +1101,45 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
           <div className="kanban-board">
             {BOARD_COLUMNS.map((column) => {
               const columnShares = column.key === 'offers' ? shares : []
-              const columnReservations = column.key === 'reservations' ? reservations : []
+              const columnReservations = column.key === 'reservations'
+                ? reservations.filter((reservation) => reservation.status === 'PENDING')
+                : []
+              const columnNegotiations = column.key === 'negotiation'
+                ? negotiations.filter((negotiation) => negotiation.status === 'IN_NEGOTIATION')
+                : column.key === 'waiting_booking'
+                  ? negotiations.filter((negotiation) => negotiation.status === 'AWAITING_BOOKING')
+                  : []
               const count = column.key === 'offers'
                 ? shares.length
                 : column.key === 'reservations'
-                  ? reservations.length
-                  : 0
+                  ? columnReservations.length
+                    : column.key === 'negotiation' || column.key === 'waiting_booking'
+                      ? columnNegotiations.length
+                    : 0
 
               return (
                 <section
-                  className={`kanban-column column-${column.key}${column.key === 'reservations' && isReservationsDropActive ? ' is-drop-active' : ''}`}
+                  className={`kanban-column column-${column.key}${(column.key === 'reservations' && isReservationsDropActive) || (column.key === 'negotiation' && isNegotiationDropActive) ? ' is-drop-active' : ''}`}
                   key={column.key}
-                  onDragOver={column.key === 'reservations' && draggedShare ? (event) => {
+                  onDragOver={column.key === 'negotiation' && draggedReservationId !== null ? (event) => {
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = 'move'
+                    setIsNegotiationDropActive(true)
+                  } : column.key === 'reservations' && draggedShare ? (event) => {
                     event.preventDefault()
                     event.dataTransfer.dropEffect = 'copy'
                     setIsReservationsDropActive(true)
                   } : undefined}
-                  onDragLeave={column.key === 'reservations' ? (event) => {
+                  onDragLeave={column.key === 'negotiation' ? (event) => {
                     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                      setIsReservationsDropActive(false)
+                      setIsNegotiationDropActive(false)
                     }
                   } : undefined}
-                  onDrop={column.key === 'reservations' ? handleReservationsDrop : undefined}
+                  onDrop={column.key === 'negotiation' && draggedReservationId !== null
+                    ? handleNegotiationDrop
+                    : column.key === 'reservations' && draggedShare
+                      ? handleReservationsDrop
+                      : undefined}
                 >
                   <header className="column-heading">
                     <div>
@@ -673,6 +1149,7 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
                     <span className="column-count" aria-label={`${count} itens`}>
                         {column.key === 'offers' && isLoading
                           || column.key === 'reservations' && areReservationsLoading
+                          || (column.key === 'negotiation' || column.key === 'waiting_booking') && areNegotiationsLoading
                           ? '…'
                           : count}
                     </span>
@@ -682,6 +1159,11 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
                     {column.key === 'reservations' && isReservationsDropActive && (
                       <div className="reservation-drop-hint" aria-live="polite">
                         Solte a oferta para escolher as slabs
+                      </div>
+                    )}
+                    {column.key === 'negotiation' && isNegotiationDropActive && (
+                      <div className="reservation-drop-hint" aria-live="polite">
+                        Solte para aprovar a reserva e abrir a negociação
                       </div>
                     )}
                     {column.key === 'offers' && error && (
@@ -704,17 +1186,32 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
                     {column.key === 'reservations' && areReservationsLoading && reservations.length === 0 && (
                       <p className="column-loading" aria-live="polite">Carregando reservas...</p>
                     )}
+                    {(column.key === 'negotiation' || column.key === 'waiting_booking') && negotiationsError && (
+                      <p className="column-error" role="alert">{negotiationsError}</p>
+                    )}
+                    {(column.key === 'negotiation' || column.key === 'waiting_booking') && areNegotiationsLoading && columnNegotiations.length === 0 && (
+                      <p className="column-loading" aria-live="polite">Carregando negociações...</p>
+                    )}
                     {columnReservations.map((reservation) => (
                       <ReservationCard
                         key={reservation.id}
                         reservation={reservation}
                         onOpen={setSelectedReservationId}
+                        onDragStart={handleReservationDragStart}
+                        onDragEnd={handleReservationDragEnd}
                       />
                     ))}
-                    {column.key !== 'offers' && column.key !== 'reservations' && (
+                    {columnNegotiations.map((negotiation) => (
+                      <NegotiationCard
+                        key={negotiation.id}
+                        negotiation={negotiation}
+                        onOpen={setSelectedNegotiationId}
+                      />
+                    ))}
+                    {column.key !== 'offers' && column.key !== 'reservations' && column.key !== 'negotiation' && column.key !== 'waiting_booking' && (
                       <div className={`column-empty empty-${column.key}`}>
                         <span className="empty-mark" aria-hidden="true">
-                          {column.key === 'invoices' ? '—' : '+'}
+                          {column.key === 'completed' ? '—' : '+'}
                         </span>
                         <p>{column.emptyMessage}</p>
                       </div>
@@ -725,8 +1222,14 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
                         <p>{column.emptyMessage}</p>
                       </div>
                     )}
-                    {column.key === 'reservations' && !areReservationsLoading && !reservationsError && reservations.length === 0 && (
+                    {column.key === 'reservations' && !areReservationsLoading && !reservationsError && columnReservations.length === 0 && (
                       <div className="column-empty empty-reservations">
+                        <span className="empty-mark" aria-hidden="true">+</span>
+                        <p>{column.emptyMessage}</p>
+                      </div>
+                    )}
+                    {(column.key === 'negotiation' || column.key === 'waiting_booking') && !areNegotiationsLoading && !negotiationsError && columnNegotiations.length === 0 && (
+                      <div className={`column-empty empty-${column.key}`}>
                         <span className="empty-mark" aria-hidden="true">+</span>
                         <p>{column.emptyMessage}</p>
                       </div>
@@ -763,6 +1266,37 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
             <ReservationDetailsDialog
               reservation={reservationDetails}
               onClose={() => setSelectedReservationId(null)}
+              onApprove={handleReservationApproval}
+              onReject={handleReservationRejection}
+            />
+          )}
+        </>
+      )}
+      {selectedNegotiationId !== null && (
+        <>
+          {isLoadingNegotiationDetails && (
+            <div className="reservation-dialog-backdrop">
+              <section className="reservation-dialog reservation-dialog-state" role="dialog" aria-modal="true" aria-label="Carregando negociação">
+                <p aria-live="polite">Carregando detalhes da negociação...</p>
+              </section>
+            </div>
+          )}
+          {negotiationDetailsError && (
+            <div className="reservation-dialog-backdrop" onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setSelectedNegotiationId(null)
+            }}>
+              <section className="reservation-dialog reservation-dialog-state" role="dialog" aria-modal="true" aria-label="Erro ao carregar negociação">
+                <button className="reservation-dialog-close" type="button" onClick={() => setSelectedNegotiationId(null)} aria-label="Fechar">×</button>
+                <p className="column-error" role="alert">{negotiationDetailsError}</p>
+              </section>
+            </div>
+          )}
+          {negotiationDetails && (
+            <NegotiationDetailsDialog
+              key={negotiationDetails.id}
+              negotiation={negotiationDetails}
+              onClose={() => setSelectedNegotiationId(null)}
+              onSave={saveNegotiation}
             />
           )}
         </>
