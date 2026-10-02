@@ -17,6 +17,9 @@ export type NegotiationSummary = {
   oceanFreight: number | string | null
   invoice: string | null
   packingInfo: string | null
+  invoiceUploaded: boolean
+  packingListUploaded: boolean
+  poUploaded: boolean
   remarks: string | null
   createdAt: string
   updatedAt: string
@@ -57,7 +60,6 @@ export type NegotiationFields = {
   paymentTerms: string
   portOfLoading: string
   portOfDestination: string
-  shippingMethod: string
   incoterm: string
   containerType: string
   deliveryTime: string
@@ -65,6 +67,9 @@ export type NegotiationFields = {
   oceanFreight: number | null
   invoice: string
   packingInfo: string
+  invoiceUploaded: boolean
+  packingListUploaded: boolean
+  poUploaded: boolean
   remarks: string
 }
 
@@ -106,5 +111,16 @@ export function uploadNegotiationFile(
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body,
+  })
+}
+
+export function deleteNegotiationFile(
+  token: string,
+  negotiationId: number,
+  fileId: number,
+) {
+  return requestJson<{ id: number }>(`/negotiations/${negotiationId}/files/${fileId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
   })
 }

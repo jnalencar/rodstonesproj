@@ -1,5 +1,6 @@
 import {
     Controller,
+    Delete,
     Get,
     Param,
     ParseIntPipe,
@@ -77,5 +78,16 @@ export class NegotiationsController {
         @CurrentUser() user: AuthenticatedUser,
     ) {
         return this.negotiationsService.uploadFile(id, file, user);
+    }
+
+    @Delete(':id/files/:fileId')
+    @CompanyRequired()
+    @Permissions('negotiation:update')
+    deleteFile(
+        @Param('id', ParseIntPipe) id: number,
+        @Param('fileId', ParseIntPipe) fileId: number,
+        @CurrentUser() user: AuthenticatedUser,
+    ) {
+        return this.negotiationsService.deleteFile(id, fileId, user);
     }
 }

@@ -632,10 +632,34 @@
   list-style: none;
 }
 
+.negotiation-file-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .negotiation-file-list a {
   color: #49634c;
   font-size: 10px;
   overflow-wrap: anywhere;
+}
+
+.negotiation-file-remove {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid #d7dcd4;
+  border-radius: 3px;
+  color: #734c42;
+  background: #fffefa;
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+}
+
+.negotiation-file-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .negotiation-muted {
@@ -645,26 +669,168 @@
 }
 
 .negotiation-file-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+  position: relative;
+  display: inline-flex;
+  min-height: 39px;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
   margin-top: 12px;
-  color: #455248;
+  padding: 0 13px;
+  overflow: hidden;
+  border: 1px solid #28382f;
+  border-radius: 3px;
+  color: #fffefa;
+  background: #28382f;
+  cursor: pointer;
+  font: inherit;
   font-size: 10px;
   font-weight: 700;
 }
 
+.negotiation-file-picker:hover {
+  background: #3d5543;
+}
+
+.negotiation-file-picker:focus-within {
+  outline: 3px solid rgb(102 122 104 / 30%);
+  outline-offset: 2px;
+}
+
+.negotiation-file-picker:has(input:disabled) {
+  border-color: #aeb7af;
+  background: #aeb7af;
+  cursor: not-allowed;
+}
+
 .negotiation-file-picker input {
-  max-width: 100%;
-  color: #667168;
-  font: inherit;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.negotiation-pending-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.negotiation-pending-files li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #455248;
   font-size: 10px;
 }
 
-.negotiation-file-picker small {
-  color: #7b837a;
-  font-weight: 400;
+.negotiation-pending-files li span {
+  min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.negotiation-pending-files button {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid #d7dcd4;
+  border-radius: 3px;
+  color: #734c42;
+  background: #fffefa;
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+}
+
+.negotiation-pending-files button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.negotiation-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 14px;
+}
+
+.negotiation-checklist label {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #d7dcd4;
+  border-radius: 3px;
+  color: #455248;
+  background: #fffefa;
+  cursor: pointer;
+  font-size: 10px;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.negotiation-checklist input {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  margin: 0;
+  appearance: none;
+  border: 1px solid #98a398;
+  border-radius: 3px;
+  background: #fffefa;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.negotiation-checklist input::after {
+  width: 4px;
+  height: 8px;
+  transform: rotate(45deg) scale(0);
+  border: solid #fffefa;
+  border-width: 0 2px 2px 0;
+  content: '';
+  transition: transform 120ms ease;
+}
+
+.negotiation-checklist input:checked {
+  border-color: #3d5543;
+  background: #3d5543;
+}
+
+.negotiation-checklist input:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+
+.negotiation-checklist input:focus-visible {
+  outline: 2px solid #718574;
+  outline-offset: 2px;
+}
+
+.negotiation-checklist input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.negotiation-checklist label:has(input:checked) {
+  border-color: #8da08e;
+  background: #f1f5ef;
+}
+
+.negotiation-checklist label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.negotiation-previous-comment textarea {
+  background: #f4f5f1;
 }
 
 .negotiation-dialog-footer {
@@ -1385,4 +1551,8 @@
 }
 
 @media (max-width: 420px) {
+}
+
+.negotiation-upload-button {
+  margin-top: 10px;
 }

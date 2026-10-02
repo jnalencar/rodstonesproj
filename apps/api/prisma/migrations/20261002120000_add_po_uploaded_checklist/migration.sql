@@ -1,0 +1,2 @@
+ALTER TABLE "Negotiation"
+ADD COLUMN "poUploaded" BOOLEAN NOT NULL DEFAULT false;

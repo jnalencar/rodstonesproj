@@ -632,6 +632,9 @@ model Negotiation {
   oceanFreight        Decimal?
   invoice             String?
   packingInfo         String?
+  invoiceUploaded     Boolean @default(false)
+  packingListUploaded Boolean @default(false)
+  poUploaded          Boolean @default(false)
   remarks             String?
 
   createdAt DateTime @default(now())

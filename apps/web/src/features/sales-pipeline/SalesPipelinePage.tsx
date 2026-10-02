@@ -4,8 +4,8 @@ import { getShares } from './sales-pipeline.api'
 import { approveReservation, createReservationRequest, getReservation, getReservations, rejectReservation } from './reservations.api'
 import type { ReservationDetails, ReservationStatus, ReservationSummary } from './reservations.api'
 import type { BoardColumn, ShareOffer } from './sales-pipeline.types'
-import { getNegotiation, getNegotiations, updateNegotiation, uploadNegotiationFile } from './negotiations.api'
-import type { NegotiationFields, NegotiationSummary } from './negotiations.api'
+import { deleteNegotiationFile, getNegotiation, getNegotiations, updateNegotiation, uploadNegotiationFile } from './negotiations.api'
+import type { NegotiationFields, NegotiationFile, NegotiationSummary } from './negotiations.api'
 import { getPublicShare } from '../shares/shares.api'
 import type { PublicShare } from '../shares/shares.api'
 import './SalesPipelinePage.css'
@@ -37,7 +37,7 @@ const BOARD_COLUMNS: BoardColumn[] = [
   },
   {
     key: 'already_booked',
-    title: 'Já Reservado',
+    title: 'Booking Confirmado',
     description: 'Etapa sugerida',
     emptyMessage: 'Espaço reservado para esta etapa.',
   },
@@ -142,7 +142,6 @@ function OfferCard({
       {share.expiresAt && (
         <p className="offer-expiration">Expira em {formatDate(share.expiresAt)}</p>
       )}
-      <span className="offer-drag-hint" aria-hidden="true">⠿ Arraste para Reservas</span>
     </a>
   )
 }
@@ -595,16 +594,19 @@ function NegotiationDetailsDialog({
   negotiation,
   onClose,
   onSave,
+  onUploadFile,
+  onDeleteFile,
 }: {
   negotiation: NegotiationSummary
   onClose: () => void
-  onSave: (fields: NegotiationFields, comment: string, files: File[]) => Promise<void>
+  onSave: (fields: NegotiationFields, comment: string) => Promise<void>
+  onUploadFile: (file: File) => Promise<NegotiationFile>
+  onDeleteFile: (fileId: number) => Promise<void>
 }) {
   const [form, setForm] = useState<NegotiationForm>(() => ({
     paymentTerms: negotiation.paymentTerms ?? '',
     portOfLoading: negotiation.portOfLoading ?? '',
     portOfDestination: negotiation.portOfDestination ?? '',
-    shippingMethod: negotiation.shippingMethod ?? '',
     incoterm: negotiation.incoterm ?? '',
     containerType: negotiation.containerType ?? '',
     deliveryTime: negotiation.deliveryTime ?? '',
@@ -612,20 +614,26 @@ function NegotiationDetailsDialog({
     oceanFreight: negotiation.oceanFreight?.toString() ?? '',
     invoice: negotiation.invoice ?? '',
     packingInfo: negotiation.packingInfo ?? '',
+    invoiceUploaded: negotiation.invoiceUploaded,
+    packingListUploaded: negotiation.packingListUploaded,
+    poUploaded: negotiation.poUploaded,
     remarks: negotiation.remarks ?? '',
   }))
   const [comment, setComment] = useState('')
   const [files, setFiles] = useState<File[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState(negotiation.files ?? [])
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false)
+  const [deletingFileId, setDeletingFileId] = useState<number | null>(null)
   const isEditable = negotiation.status === 'IN_NEGOTIATION'
+  const isBusy = isSubmitting || isUploadingFiles || deletingFileId !== null
 
   useEffect(() => {
     setForm({
       paymentTerms: negotiation.paymentTerms ?? '',
       portOfLoading: negotiation.portOfLoading ?? '',
       portOfDestination: negotiation.portOfDestination ?? '',
-      shippingMethod: negotiation.shippingMethod ?? '',
       incoterm: negotiation.incoterm ?? '',
       containerType: negotiation.containerType ?? '',
       deliveryTime: negotiation.deliveryTime ?? '',
@@ -633,22 +641,12 @@ function NegotiationDetailsDialog({
       oceanFreight: negotiation.oceanFreight?.toString() ?? '',
       invoice: negotiation.invoice ?? '',
       packingInfo: negotiation.packingInfo ?? '',
+      invoiceUploaded: negotiation.invoiceUploaded,
+      packingListUploaded: negotiation.packingListUploaded,
+      poUploaded: negotiation.poUploaded,
       remarks: negotiation.remarks ?? '',
     })
   }, [negotiation])
-  const requiredFields = [
-    form.paymentTerms,
-    form.portOfLoading,
-    form.portOfDestination,
-    form.shippingMethod,
-    form.incoterm,
-    form.containerType,
-    form.deliveryTime,
-    form.truckingFee,
-    form.oceanFreight,
-  ]
-  const completedFields = requiredFields.filter((value) => value.trim() !== '').length
-
   function updateField(field: keyof NegotiationForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
   }
@@ -667,8 +665,7 @@ function NegotiationDetailsDialog({
         ...form,
         truckingFee,
         oceanFreight,
-      }, comment, files)
-      setFiles([])
+      }, comment)
       setComment('')
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Não foi possível salvar as alterações.')
@@ -677,9 +674,50 @@ function NegotiationDetailsDialog({
     }
   }
 
-  const textField = (field: keyof NegotiationForm, label: string, required = false) => (
+  async function uploadFiles(filesToUpload: File[] = files) {
+    if (filesToUpload.length === 0 || isBusy) return
+    setError('')
+    setIsUploadingFiles(true)
+    try {
+      for (const file of filesToUpload) {
+        try {
+          const uploadedFile = await onUploadFile(file)
+          setUploadedFiles((current) => [...current, uploadedFile])
+          setFiles((current) => current.filter((queuedFile) => queuedFile !== file))
+        } catch (requestError) {
+          setError(requestError instanceof Error
+            ? requestError.message
+            : `Não foi possível anexar ${file.name}.`)
+          break
+        }
+      }
+    } finally {
+      setIsUploadingFiles(false)
+    }
+  }
+
+  async function removeUploadedFile(fileId: number) {
+    setError('')
+    setDeletingFileId(fileId)
+    try {
+      await onDeleteFile(fileId)
+      setUploadedFiles((current) => current.filter((file) => file.id !== fileId))
+    } catch (requestError) {
+      setError(requestError instanceof Error
+        ? requestError.message
+        : 'Não foi possível remover o arquivo anexado.')
+    } finally {
+      setDeletingFileId(null)
+    }
+  }
+
+  const textField = (
+    field: Exclude<keyof NegotiationForm, 'invoiceUploaded' | 'packingListUploaded' | 'poUploaded'>,
+    label: string,
+    required = false,
+  ) => (
     <label className="negotiation-field" key={field}>
-      <span>{label}{required && <small>Obrigatório</small>}</span>
+      <span>{label}{required}</span>
       <input
         type={field === 'truckingFee' || field === 'oceanFreight' ? 'number' : 'text'}
         step={field === 'truckingFee' || field === 'oceanFreight' ? '0.01' : undefined}
@@ -692,10 +730,10 @@ function NegotiationDetailsDialog({
 
   return (
     <div className="reservation-dialog-backdrop" onMouseDown={(event) => {
-      if (event.target === event.currentTarget && !isSubmitting) onClose()
+      if (event.target === event.currentTarget && !isBusy) onClose()
     }}>
       <section className="reservation-dialog negotiation-dialog" role="dialog" aria-modal="true" aria-labelledby="negotiation-title">
-        <button className="reservation-dialog-close" type="button" onClick={onClose} aria-label="Fechar negociação" disabled={isSubmitting}>×</button>
+        <button className="reservation-dialog-close" type="button" onClick={onClose} aria-label="Fechar negociação" disabled={isBusy}>×</button>
         <header className="reservation-detail-heading">
           <div>
             <p className="eyebrow">RESERVA #{negotiation.reservationRequestId}</p>
@@ -705,23 +743,31 @@ function NegotiationDetailsDialog({
 
         <section className="negotiation-form-section">
           <div className="negotiation-section-heading">
-            <div>
-              <h3>Condições comerciais</h3>
-              <p>{completedFields}/9 campos preenchidos para avançar para booking</p>
-            </div>
+          <h3>Condições de pagamento</h3>
           </div>
           <div className="negotiation-field-grid">
-            {textField('paymentTerms', 'Condições de pagamento', true)}
-            {textField('portOfLoading', 'Porto de embarque', true)}
-            {textField('portOfDestination', 'Porto de destino', true)}
-            {textField('shippingMethod', 'Modal de envio', true)}
-            {textField('incoterm', 'Incoterm', true)}
-            {textField('containerType', 'Tipo de container', true)}
-            {textField('deliveryTime', 'Prazo de entrega', true)}
-            {textField('truckingFee', 'Frete terrestre', true)}
-            {textField('oceanFreight', 'Frete marítimo', true)}
-            {textField('invoice', 'Fatura')}
-            {textField('packingInfo', 'Informações de embalagem')}
+            {textField('paymentTerms', 'Termos de pagamento*', true)}
+            {textField('incoterm', 'Incoterm*', true)}
+          </div>
+        </section>
+
+        <section className="negotiation-form-section">
+          <h3>Dados de entrega</h3>
+          <div className="negotiation-field-grid">
+            {textField('portOfLoading', 'Porto de embarque*', true)}
+            {textField('portOfDestination', 'Porto de destino*', true)}
+            {textField('containerType', 'Tipo de container*', true)}
+            {textField('deliveryTime', 'Prazo de entrega*', true)}
+            {textField('oceanFreight', 'Frete marítimo*', true)}
+            {textField('truckingFee', 'Frete terrestre*', true)}
+          </div>
+        </section>
+
+        <section className="negotiation-form-section">
+          <h3>Informações de faturamento</h3>
+          <div className="negotiation-field-grid">
+            {textField('invoice', 'Invoice*', true)}
+            {textField('packingInfo', 'P.O')}
           </div>
           <label className="negotiation-field negotiation-field-wide">
             <span>Informações e observações</span>
@@ -730,38 +776,116 @@ function NegotiationDetailsDialog({
         </section>
 
         <section className="negotiation-form-section">
-          <h3>Arquivos</h3>
-          {negotiation.files && negotiation.files.length > 0 ? (
+          <h3>Arquivos e conferência</h3>
+          {uploadedFiles.length > 0 ? (
             <ul className="negotiation-file-list">
-              {negotiation.files.map((file) => (
-                <li key={file.id}><a href={file.url} target="_blank" rel="noreferrer">{file.fileName}</a></li>
+              {uploadedFiles.map((file) => (
+                <li key={file.id}>
+                  <a href={file.url} target="_blank" rel="noreferrer">{file.fileName}</a>
+                  {isEditable && (
+                    <button
+                      className="negotiation-file-remove"
+                      type="button"
+                      onClick={() => void removeUploadedFile(file.id)}
+                      disabled={isBusy}
+                      aria-label={`Remover arquivo ${file.fileName}`}
+                    >
+                      {deletingFileId === file.id ? 'Removendo...' : 'Remover'}
+                    </button>
+                  )}
+                </li>
               ))}
             </ul>
           ) : <p className="negotiation-muted">Nenhum arquivo anexado.</p>}
           {isEditable && (
             <label className="negotiation-file-picker">
-              <span>Anexar arquivos</span>
-              <input type="file" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []))} disabled={isSubmitting} />
-              {files.length > 0 && <small>{files.map((file) => file.name).join(', ')}</small>}
+              <input
+                type="file"
+                multiple
+                onChange={(event) => {
+                  const selectedFiles = Array.from(event.currentTarget.files ?? [])
+                  event.currentTarget.value = ''
+                  if (selectedFiles.length === 0) return
+                  setFiles((current) => [...current, ...selectedFiles])
+                  void uploadFiles(selectedFiles)
+                }}
+                disabled={isBusy}
+              />
+              <span>Escolher arquivos</span>
             </label>
           )}
-        </section>
-
-        {isEditable && (
-          <section className="negotiation-form-section">
-            <h3>Adicionar comentário</h3>
-            <label className="negotiation-field negotiation-field-wide">
-              <span>Novo comentário</span>
-              <textarea rows={3} value={comment} onChange={(event) => setComment(event.target.value)} disabled={isSubmitting} placeholder="Registre uma atualização da negociação" />
+          {files.length > 0 && (
+            <ul className="negotiation-pending-files" aria-label="Arquivos aguardando envio">
+              {files.map((file, index) => (
+                <li key={`${file.name}-${file.size}-${file.lastModified}-${index}`}>
+                  <span>{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                    disabled={isBusy}
+                    aria-label={`Remover ${file.name}`}
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {files.length > 0 && (
+            <button
+              className="reservation-submit-button negotiation-upload-button"
+              type="button"
+              onClick={() => void uploadFiles()}
+              disabled={isBusy}
+            >
+              {isUploadingFiles ? 'Enviando arquivos...' : `Anexar ${files.length} arquivo(s)`}
+            </button>
+          )}
+          <div className="negotiation-checklist">
+            <label>
+              <input
+                type="checkbox"
+                checked={form.invoiceUploaded}
+                onChange={(event) => setForm((current) => ({ ...current, invoiceUploaded: event.target.checked }))}
+                disabled={!isEditable || isSubmitting}
+              />
+              Invoice enviado
             </label>
-          </section>
-        )}
+            <label>
+              <input
+                type="checkbox"
+                checked={form.packingListUploaded}
+                onChange={(event) => setForm((current) => ({ ...current, packingListUploaded: event.target.checked }))}
+                disabled={!isEditable || isSubmitting}
+              />
+              Packing list enviado
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.poUploaded}
+                onChange={(event) => setForm((current) => ({ ...current, poUploaded: event.target.checked }))}
+                disabled={!isEditable || isSubmitting}
+              />
+              P.O anexado (opcional)
+            </label>
+          </div>
+          <label className="negotiation-field negotiation-field-wide negotiation-previous-comment">
+            <span>Comentário da solicitação de reserva</span>
+            <textarea
+              rows={3}
+              readOnly
+              value={negotiation.reservationRequest.message ?? ''}
+              placeholder="Nenhum comentário foi adicionado na solicitação."
+            />
+          </label>
+        </section>
 
         {error && <p className="column-error" role="alert">{error}</p>}
         {isEditable && (
           <footer className="negotiation-dialog-footer">
             <span>As alterações são salvas na negociação.</span>
-            <button className="reservation-submit-button" type="button" onClick={() => void submit()} disabled={isSubmitting}>
+            <button className="reservation-submit-button" type="button" onClick={() => void submit()} disabled={isBusy}>
               {isSubmitting ? 'Salvando...' : 'Salvar alterações'}
             </button>
           </footer>
@@ -1025,7 +1149,7 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
     }
   }
 
-  async function saveNegotiation(fields: NegotiationFields, comment: string, files: File[]) {
+  async function saveNegotiation(fields: NegotiationFields, comment: string) {
     const token = sessionStorage.getItem('rodstones.accessToken')
     if (!token || selectedNegotiationId === null) {
       throw new Error('Sua sessão expirou. Entre novamente para salvar.')
@@ -1040,15 +1164,28 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
       : fields.remarks.trim()
 
     await updateNegotiation(token, selectedNegotiationId, { ...fields, remarks })
-    for (const file of files) {
-      await uploadNegotiationFile(token, selectedNegotiationId, file)
-    }
     const [details, updatedNegotiations] = await Promise.all([
       getNegotiation(token, selectedNegotiationId),
       getNegotiations(token),
     ])
     setNegotiationDetails(details)
     setNegotiations(Array.isArray(updatedNegotiations) ? updatedNegotiations : [])
+  }
+
+  async function uploadNegotiationAttachment(file: File) {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token || selectedNegotiationId === null) {
+      throw new Error('Sua sessão expirou. Entre novamente para anexar arquivos.')
+    }
+    return uploadNegotiationFile(token, selectedNegotiationId, file)
+  }
+
+  async function removeNegotiationAttachment(fileId: number) {
+    const token = sessionStorage.getItem('rodstones.accessToken')
+    if (!token || selectedNegotiationId === null) {
+      throw new Error('Sua sessão expirou. Entre novamente para remover arquivos.')
+    }
+    await deleteNegotiationFile(token, selectedNegotiationId, fileId)
   }
 
   async function refreshReservations() {
@@ -1297,6 +1434,8 @@ export function SalesPipelinePage({ companyId }: SalesPipelinePageProps) {
               negotiation={negotiationDetails}
               onClose={() => setSelectedNegotiationId(null)}
               onSave={saveNegotiation}
+              onUploadFile={uploadNegotiationAttachment}
+              onDeleteFile={removeNegotiationAttachment}
             />
           )}
         </>

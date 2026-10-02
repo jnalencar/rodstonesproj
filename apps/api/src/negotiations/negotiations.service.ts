@@ -224,6 +224,38 @@ export class NegotiationsService {
         }
     }
 
+    async deleteFile(
+        id: number,
+        fileId: number,
+        user: AuthenticatedUser,
+    ) {
+        const companyId = this.getCompanyId(user);
+        const file = await this.prisma.negotiationFile.findFirst({
+            where: {
+                id: fileId,
+                negotiationId: id,
+                negotiation: {
+                    reservationRequest: { companyId },
+                },
+            },
+            select: {
+                id: true,
+                storageKey: true,
+            },
+        });
+
+        if (!file) {
+            throw new NotFoundException('Arquivo da negociação não encontrado.');
+        }
+
+        await this.storageService.delete(file.storageKey);
+        await this.prisma.negotiationFile.delete({
+            where: { id: file.id },
+        });
+
+        return { id: file.id };
+    }
+
     async create(
         dto: CreateNegotiationDto,
         user: AuthenticatedUser,
@@ -400,6 +432,18 @@ export class NegotiationsService {
                     packingInfo: dto.packingInfo.trim() || null,
                 }),
 
+                ...(dto.invoiceUploaded !== undefined && {
+                    invoiceUploaded: dto.invoiceUploaded,
+                }),
+
+                ...(dto.packingListUploaded !== undefined && {
+                    packingListUploaded: dto.packingListUploaded,
+                }),
+
+                ...(dto.poUploaded !== undefined && {
+                    poUploaded: dto.poUploaded,
+                }),
+
                 ...(dto.remarks !== undefined && {
                     remarks: dto.remarks.trim() || null,
                 }),
@@ -427,23 +471,25 @@ export class NegotiationsService {
         paymentTerms: string | null;
         portOfLoading: string | null;
         portOfDestination: string | null;
-        shippingMethod: string | null;
         incoterm: string | null;
         containerType: string | null;
         deliveryTime: string | null;
         truckingFee: Prisma.Decimal | null;
         oceanFreight: Prisma.Decimal | null;
+        invoiceUploaded: boolean;
+        packingListUploaded: boolean;
     }) {
         return (
             !!negotiation.paymentTerms?.trim() &&
             !!negotiation.portOfLoading?.trim() &&
             !!negotiation.portOfDestination?.trim() &&
-            !!negotiation.shippingMethod?.trim() &&
             !!negotiation.incoterm?.trim() &&
             !!negotiation.containerType?.trim() &&
             !!negotiation.deliveryTime?.trim() &&
             negotiation.truckingFee !== null &&
-            negotiation.oceanFreight !== null
+            negotiation.oceanFreight !== null &&
+            negotiation.invoiceUploaded &&
+            negotiation.packingListUploaded
         );
     }
 }

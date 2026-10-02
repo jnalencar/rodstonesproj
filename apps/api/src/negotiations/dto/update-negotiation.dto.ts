@@ -1,4 +1,5 @@
 import {
+    IsBoolean,
     IsNumber,
     IsOptional,
     IsString,
@@ -48,6 +49,18 @@ export class UpdateNegotiationDto {
     @IsOptional()
     @IsString()
     packingInfo?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    invoiceUploaded?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    packingListUploaded?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    poUploaded?: boolean;
 
     @IsOptional()
     @IsString()
