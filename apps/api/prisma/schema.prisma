@@ -123,9 +123,9 @@ model Company {
 
 model User {
   id           Int        @id @default(autoincrement())
+  supabaseId   String     @unique
   name         String
   email        String     @unique
-  passwordHash String
   status       UserStatus @default(ACTIVE)
 
   createdAt   DateTime  @default(now())

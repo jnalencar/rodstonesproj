@@ -58,10 +58,10 @@ const permissions: { code: string; description: string }[] = [
   { code: 'partner:create', description: 'Criar parceiros' },
   { code: 'partner:update', description: 'Atualizar parceiros' },
   { code: 'partner:delete', description: 'Excluir parceiros' },
-  
+
   { code: 'partner:pricing', description: 'Gerenciar preços e margens de revenda de parceiros' },
   { code: 'partner:price:read', description: 'Visualizar preço de revenda' },
-  { code: 'partner:price:update', description: 'Alterar preço de revenda'},
+  { code: 'partner:price:update', description: 'Alterar preço de revenda' },
 
   { code: 'membership:read', description: 'Visualizar membros' },
   { code: 'membership:create', description: 'Criar membros' },
@@ -500,6 +500,107 @@ const rolePermissions = {
   ],
 };
 
+async function bootstrapAdmin() {
+  const supabaseId = process.env.BOOTSTRAP_SUPABASE_USER_ID;
+  const name = process.env.BOOTSTRAP_USER_NAME;
+  const email = process.env.BOOTSTRAP_USER_EMAIL;
+  const companyName = process.env.BOOTSTRAP_COMPANY_NAME ?? 'RodStones';
+
+  if (!supabaseId || !name || !email) {
+    throw new Error(
+      'BOOTSTRAP_SUPABASE_USER_ID, BOOTSTRAP_USER_NAME e BOOTSTRAP_USER_EMAIL são obrigatórios.',
+    );
+  }
+
+  // 1. Cria/encontra a empresa inicial
+  const company = await prisma.company.upsert({
+    where: {
+      id: 1,
+    },
+    update: {
+      name: companyName,
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+    create: {
+      name: companyName,
+      status: 'ACTIVE',
+    },
+  });
+
+  // 2. Cria/encontra o User vinculado ao Supabase Auth
+  const user = await prisma.user.upsert({
+    where: {
+      supabaseId,
+    },
+    update: {
+      name,
+      email,
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+    create: {
+      supabaseId,
+      name,
+      email,
+      status: 'ACTIVE',
+    },
+  });
+
+  // 3. Cria/encontra o vínculo User <-> Company
+  const membership = await prisma.companyMembership.upsert({
+    where: {
+      userId_companyId: {
+        userId: user.id,
+        companyId: company.id,
+      },
+    },
+    update: {
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+    create: {
+      userId: user.id,
+      companyId: company.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  // 4. Busca o PLATFORM_ADMIN global
+  const platformAdmin = await prisma.role.findFirst({
+    where: {
+      code: 'PLATFORM_ADMIN',
+      companyId: null,
+    },
+  });
+
+  if (!platformAdmin) {
+    throw new Error('Role PLATFORM_ADMIN não encontrada.');
+  }
+
+  // 5. Vincula PLATFORM_ADMIN ao usuário
+  await prisma.userRole.upsert({
+    where: {
+      membershipId_roleId: {
+        membershipId: membership.id,
+        roleId: platformAdmin.id,
+      },
+    },
+    update: {},
+    create: {
+      membershipId: membership.id,
+      roleId: platformAdmin.id,
+    },
+  });
+
+  console.log('Bootstrap concluído:');
+  console.log(`  User: ${user.id} (${user.email})`);
+  console.log(`  Supabase ID: ${user.supabaseId}`);
+  console.log(`  Company: ${company.id} (${company.name})`);
+  console.log(`  Membership: ${membership.id}`);
+  console.log(`  Role: PLATFORM_ADMIN`);
+}
+
 async function main() {
   for (const permission of permissions) {
     await prisma.permission.upsert({
@@ -569,9 +670,10 @@ async function main() {
           roleId: role.id,
           permissionId: permission.id,
         },
-      });
+      });   
     }
   }
+  await bootstrapAdmin();
 }
 
 main()
