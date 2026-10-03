@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getProfile, login, switchCompany } from './auth.api'
+import { getSupabaseClient } from '../../lib/supabase'
 import type { Company, UserProfile } from './auth.types'
 
 const ACCESS_TOKEN_KEY = 'rodstones.accessToken'
@@ -14,15 +15,34 @@ export function useAuth() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const token = sessionStorage.getItem(ACCESS_TOKEN_KEY)
-    if (!token) {
+    let supabase
+    try {
+      supabase = getSupabaseClient()
+    } catch {
       setIsCheckingSession(false)
       return
     }
 
     let active = true
-    void getProfile(token)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) sessionStorage.setItem(ACCESS_TOKEN_KEY, session.access_token)
+      else sessionStorage.removeItem(ACCESS_TOKEN_KEY)
+    })
+
+    void supabase.auth.getSession()
+      .then(({ data, error: sessionError }) => {
+        if (sessionError) throw sessionError
+        const token = data.session?.access_token
+        if (!token) {
+          sessionStorage.removeItem(ACCESS_TOKEN_KEY)
+          sessionStorage.removeItem(COMPANY_ID_KEY)
+          return null
+        }
+        sessionStorage.setItem(ACCESS_TOKEN_KEY, token)
+        return getProfile(token)
+      })
       .then((user) => {
+        if (!user) return
         if (!active) return
         setProfile(user)
         const selectedId = Number(sessionStorage.getItem(COMPANY_ID_KEY))
@@ -33,6 +53,7 @@ export function useAuth() {
         else sessionStorage.removeItem(COMPANY_ID_KEY)
       })
       .catch(() => {
+        if (!active) return
         sessionStorage.removeItem(ACCESS_TOKEN_KEY)
         sessionStorage.removeItem(COMPANY_ID_KEY)
       })
@@ -42,6 +63,7 @@ export function useAuth() {
 
     return () => {
       active = false
+      subscription.unsubscribe()
     }
   }, [])
 
@@ -77,7 +99,16 @@ export function useAuth() {
     setSwitchingCompanyId(company.id)
     try {
       const result = await switchCompany(token, company)
-      sessionStorage.setItem(ACCESS_TOKEN_KEY, result.accessToken)
+      if (!result.requiresTokenRefresh) {
+        throw new Error('A empresa foi alterada, mas a API não solicitou a renovação da sessão.')
+      }
+
+      const { data, error: refreshError } = await getSupabaseClient().auth.refreshSession()
+      if (refreshError) throw refreshError
+      const accessToken = data.session?.access_token
+      if (!accessToken) throw new Error('O Supabase não retornou uma sessão renovada.')
+
+      sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
       sessionStorage.setItem(COMPANY_ID_KEY, String(company.id))
       setActiveCompany(company)
     } catch (requestError) {
@@ -95,6 +126,7 @@ export function useAuth() {
   }
 
   function signOut() {
+    void getSupabaseClient().auth.signOut().catch(() => undefined)
     sessionStorage.removeItem(ACCESS_TOKEN_KEY)
     sessionStorage.removeItem(COMPANY_ID_KEY)
     setProfile(null)

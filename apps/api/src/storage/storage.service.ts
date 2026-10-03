@@ -13,14 +13,14 @@ export class StorageService {
   private readonly bucket: string;
 
   constructor() {
-    this.bucket = process.env.SUPABASE_S3_BUCKET!;
+    this.bucket = process.env.SUPABASE_BUCKET!;
 
     this.s3 = new S3Client({
-      endpoint: process.env.SUPABASE_S3_ENDPOINT,
-      region: process.env.SUPABASE_S3_REGION,
+      endpoint: process.env.SUPABASE_ENDPOINT,
+      region: process.env.SUPABASE_REGION,
       credentials: {
-        accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY!,
-        secretAccessKey: process.env.SUPABASE_S3_SECRET_KEY!,
+        accessKeyId: process.env.SUPABASE_ACCESS_KEY!,
+        secretAccessKey: process.env.SUPABASE_SECRET_KEY!,
       },
       forcePathStyle: true,
     });

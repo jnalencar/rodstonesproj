@@ -5,13 +5,16 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { SwitchCompanyDto } from './dto/switch-company.dto';
+import { SupabaseService } from 'src/supabase/supabase.service';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly supabase: SupabaseService,
+  ) { }
 
   async getUserById(id: number) {
     return this.prisma.user.findUnique({
@@ -63,53 +66,36 @@ export class AuthService {
   }
 
   async switchCompany(
-    userId: number,
+    user: AuthenticatedUser,
     dto: SwitchCompanyDto,
   ) {
-    const membership =
-      await this.prisma.companyMembership.findFirst({
-        where: {
-          userId,
-          companyId: dto.companyId,
+    const membership = await this.prisma.companyMembership.findFirst({
+      where: {
+        userId: user.userId,
+        companyId: dto.companyId,
+        status: 'ACTIVE',
+        deletedAt: null,
+        company: {
           status: 'ACTIVE',
           deletedAt: null,
-          company: {
-            status: 'ACTIVE',
-            deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        companyId: true,
+        company: {
+          select: {
+            id: true,
+            name: true,
           },
         },
-        select: {
-          id: true,
-          companyId: true,
-
-          company: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-
-          roles: {
-            select: {
-              role: {
-                select: {
-                  code: true,
-
-                  permissions: {
-                    select: {
-                      permission: {
-                        select: {
-                          code: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+        user: {
+          select: {
+            supabaseId: true,
           },
         },
-      });
+      },
+    });
 
     if (!membership) {
       throw new UnauthorizedException(
@@ -117,42 +103,28 @@ export class AuthService {
       );
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        status: true,
-        supabaseId: true,
-      },
-    });
-
-    if (!user || user.status !== 'ACTIVE') {
-      throw new UnauthorizedException(
-        'Usuário não está ativo',
-      );
-    }
-
-    const permissions = new Set<string>();
-    const roles = new Set<string>();
-
-    membership.roles.forEach((userRole) => {
-      roles.add(userRole.role.code);
-
-      userRole.role.permissions.forEach(
-        (rolePermission) => {
-          permissions.add(
-            rolePermission.permission.code,
-          );
+    const { data, error } =
+      await this.supabase.auth.admin.updateUserById(
+        membership.user.supabaseId,
+        {
+          app_metadata: {
+            active_company_id: membership.companyId,
+          },
         },
       );
+
+    console.log('SWITCH COMPANY:', {
+      supabaseId: membership.user.supabaseId,
+      companyId: membership.companyId,
+      data,
+      error,
     });
 
     return {
-      companyId: membership.companyId,
+      message: 'Empresa alterada com sucesso.',
+      company: membership.company,
       membershipId: membership.id,
-      roles: Array.from(roles),
-      permissions: Array.from(permissions),
+      requiresTokenRefresh: true,
     };
   }
 }

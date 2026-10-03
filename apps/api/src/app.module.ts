@@ -14,7 +14,7 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { PartnersModule } from './partners/partners.module';
 import { PartnerCompaniesModule } from './partner-companies/partner-companies.module';
-import { MaterialsModule } from './materials/materials.module';
+import { MaterialsModule } from './catalog/materials/materials.module';
 import { StorageModule } from './storage/storage.module';
 import { BundlesModule } from './bundles/bundles.module';
 import { SharesModule } from './shares/shares.module';
@@ -22,6 +22,7 @@ import { ReservationsModule } from './reservation/reservations.module';
 import { ClientsModule } from './clients/clients.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NegotiationsModule } from './negotiations/negotiations.module';
+import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
   imports: [
@@ -41,7 +42,9 @@ import { NegotiationsModule } from './negotiations/negotiations.module';
             SharesModule, 
             ReservationsModule, 
             ClientsModule,
-            NegotiationsModule,],
+            NegotiationsModule,
+            SupabaseModule,
+           ],
   controllers: [AppController],
   providers: [
     AppService,

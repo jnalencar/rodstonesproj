@@ -1,16 +1,27 @@
 import { requestJson } from '../../lib/api'
+import { getSupabaseClient } from '../../lib/supabase'
 import type { Company, UserProfile } from './auth.types'
 
 type LoginResponse = {
   accessToken: string
 }
 
-export function login(email: string, password: string) {
-  return requestJson<LoginResponse>('/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+type SwitchCompanyResponse = {
+  message: string
+  company: Company
+  membershipId: number
+  requiresTokenRefresh: boolean
+}
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  const { data, error } = await getSupabaseClient().auth.signInWithPassword({
+    email,
+    password,
   })
+  if (error) throw error
+  if (!data.session) throw new Error('O Supabase não retornou uma sessão de acesso.')
+
+  return { accessToken: data.session.access_token }
 }
 
 export function getProfile(token: string) {
@@ -20,7 +31,7 @@ export function getProfile(token: string) {
 }
 
 export function switchCompany(token: string, company: Company) {
-  return requestJson<LoginResponse>('/auth/switch-company', {
+  return requestJson<SwitchCompanyResponse>('/auth/switch-company', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

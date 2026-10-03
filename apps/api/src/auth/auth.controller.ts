@@ -24,7 +24,7 @@ export class AuthController {
     @Body() dto: SwitchCompanyDto,
   ) {
     return this.authService.switchCompany(
-      user.userId,
+      user,
       dto,
     );
   }
