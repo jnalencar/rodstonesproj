@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 

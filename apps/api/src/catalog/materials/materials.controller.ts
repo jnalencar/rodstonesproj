@@ -13,10 +13,10 @@ import { MaterialsService } from './materials.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 
-import { CompanyRequired } from '../auth/decorators/company-required.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Permissions } from '../auth/decorators/permissions.decorator';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { CompanyRequired } from '../../auth/decorators/company-required.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
 
 @Controller('materials')
 export class MaterialsController {
@@ -34,7 +34,7 @@ export class MaterialsController {
     return this.materialsService.create(dto, user);
   }
 
-  @Get('list')
+  @Get()
   @CompanyRequired()
   @Permissions('material:read')
   findAll(

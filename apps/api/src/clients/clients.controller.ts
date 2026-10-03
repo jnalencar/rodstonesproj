@@ -29,6 +29,7 @@ export class ClientsController {
   ) {}
 
   @Post()
+  @CompanyRequired()
   @Permissions('client:create')
   create(
     @Body() dto: CreateClientDto,
@@ -38,6 +39,7 @@ export class ClientsController {
   }
 
   @Get()
+  @CompanyRequired()
   @Permissions('client:read')
   findAll(
     @CurrentUser() user: AuthenticatedUser,
@@ -46,6 +48,7 @@ export class ClientsController {
   }
 
   @Get(':id')
+  @CompanyRequired()
   @Permissions('client:read')
   findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -55,6 +58,7 @@ export class ClientsController {
   }
 
   @Patch(':id')
+  @CompanyRequired()
   @Permissions('client:update')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -69,6 +73,7 @@ export class ClientsController {
   }
 
   @Delete(':id')
+  @CompanyRequired()
   @Permissions('client:delete')
   remove(
     @Param('id', ParseIntPipe) id: number,

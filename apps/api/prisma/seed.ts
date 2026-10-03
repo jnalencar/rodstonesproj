@@ -91,6 +91,26 @@ const permissions: { code: string; description: string }[] = [
   { code: 'material:update', description: 'Atualizar materiais' },
   { code: 'material:delete', description: 'Excluir materiais' },
 
+  { code: 'material-type:read', description: 'Visualizar tipos de materiais' },
+  { code: 'material-type:create', description: 'Criar tipos de materiais' },
+  { code: 'material-type:update', description: 'Atualizar tipos de materiais' },
+  { code: 'material-type:delete', description: 'Excluir tipos de materiais' },
+
+  { code: 'quality:read', description: 'Visualizar qualidades' },
+  { code: 'quality:create', description: 'Criar qualidades' },
+  { code: 'quality:update', description: 'Atualizar qualidades' },
+  { code: 'quality:delete', description: 'Excluir qualidades' },
+
+  { code: 'finish:read', description: 'Visualizar acabamentos' },
+  { code: 'finish:create', description: 'Criar acabamentos' },
+  { code: 'finish:update', description: 'Atualizar acabamentos' },
+  { code: 'finish:delete', description: 'Excluir acabamentos' },
+
+  { code: 'material-classification:read', description: 'Visualizar classificações de materiais' },
+  { code: 'material-classification:create', description: 'Criar classificações de materiais' },
+  { code: 'material-classification:update', description: 'Atualizar classificações de materiais' },
+  { code: 'material-classification:delete', description: 'Excluir classificações de materiais' },
+
   { code: 'client:read', description: 'Visualizar clientes' },
   { code: 'client:create', description: 'Criar clientes' },
   { code: 'client:update', description: 'Atualizar clientes' },
@@ -195,6 +215,26 @@ const rolePermissions = {
     'material:create',
     'material:update',
     'material:delete',
+
+    'material-type:read',
+    'material-type:create',
+    'material-type:update',
+    'material-type:delete',
+
+    'quality:read',
+    'quality:create',
+    'quality:update',
+    'quality:delete',
+
+    'finish:read',
+    'finish:create',
+    'finish:update',
+    'finish:delete',
+
+    'material-classification:read',
+    'material-classification:create',
+    'material-classification:update',
+    'material-classification:delete',
 
     'client:read',
     'client:create',

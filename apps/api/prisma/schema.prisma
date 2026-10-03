@@ -437,6 +437,7 @@ model Quality {
   company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   bundles Bundle[]
 
+  @@unique([companyId, name])
   @@index([companyId])
   @@index([deletedAt])
 }
@@ -455,8 +456,10 @@ model Finish {
   company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   bundles Bundle[]
 
+  @@unique([companyId, name])
   @@index([companyId])
   @@index([deletedAt])
+  
 }
 
 model MaterialType {
